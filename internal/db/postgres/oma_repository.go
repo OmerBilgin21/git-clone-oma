@@ -44,6 +44,7 @@ func (r *OmaRepositoryImpl) Create(ctx context.Context, data *models.OmaReposito
 
 	return createdRepo, err
 }
+
 func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*models.OmaRepository, error) {
 	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
 	if err != nil {
@@ -55,4 +56,33 @@ func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*models.OmaReposit
 	err = r.db.SelectContext(ctx, foundRepo, query, id)
 	return foundRepo, err
 
+}
+
+func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *models.OmaRepository) (*models.OmaRepository, error) {
+	qb := sq.Update("repositories")
+
+	fmt.Printf("&data: %v\n", *data)
+
+	if data.FileName != nil {
+		qb = qb.Set("filename", *data.FileName)
+	}
+	if data.CachedText != nil {
+		fmt.Printf("*data.CachedText: %v\n", *data.CachedText)
+		qb = qb.Set("cached_text", *data.CachedText)
+	}
+
+	qb = qb.Where(squirrel.Eq{"id": strconv.Itoa(id)}).Suffix("returning *")
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		log.Fatalf("error while updating: %v\n", err)
+	}
+
+	fmt.Printf("query: %v\n", query)
+	fmt.Printf("args: %v\n", args)
+
+	updatedRepo := &models.OmaRepository{}
+	err = r.db.GetContext(ctx, updatedRepo, query, args...)
+
+	return updatedRepo, err
 }
