@@ -7,25 +7,62 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"path/filepath"
 )
+
+func reset(path string, dbUrl string) {
+	m, err := migrate.New(
+		path,
+		dbUrl,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := m.Force(0); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := m.Up(); err != nil {
+		log.Fatal()
+	}
+}
 
 func main() {
 	err := godotenv.Load()
-	var dbUrl = os.Getenv("DATABASE_URL")
-
 	if err != nil {
 		log.Fatal("Environment variables could not be load!")
 	}
 
-	m, err := migrate.New(
-		"file://db/migrations",
-		dbUrl,
-	)
+	var dbUrl = os.Getenv("DATABASE_URL")
+
+	curr, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := m.Steps(1); err != nil {
+	migrationsFolderPath := filepath.Join(curr, "db", "migrations")
+	list, err := os.ReadDir(migrationsFolderPath)
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("migration list: %v\n", list)
+
+	path := "file://" + migrationsFolderPath + "/"
+	m, err := migrate.New(
+		path,
+		dbUrl,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := m.Up(); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Migrations ran successfully!")
 }
