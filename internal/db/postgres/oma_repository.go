@@ -23,6 +23,8 @@ type OmaRepositoryImpl struct {
 	db *sqlx.DB
 }
 
+var sq = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
 func NewOmaRepository(db *sqlx.DB) *OmaRepositoryImpl {
 	return &OmaRepositoryImpl{db: db}
 }
