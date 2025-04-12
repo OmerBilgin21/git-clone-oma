@@ -18,7 +18,7 @@ func reset(m *migrate.Migrate, path string, dbUrl string) {
 
 	log.Printf("current version: %v, is dirty: %v", version, dirty)
 
-	if version > 0 && dirty == false {
+	if version > 0 {
 		if err := m.Drop(); err != nil {
 			log.Print("Yo:", err)
 		}
@@ -62,7 +62,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	migrationsFolderPath := filepath.Join(curr, "db", "migrations")
+	migrationsFolderPath := filepath.Join(curr, "internal", "db", "migrations")
 	list, err := os.ReadDir(migrationsFolderPath)
 	if err != nil {
 		log.Fatal(err)
