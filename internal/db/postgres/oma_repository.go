@@ -19,3 +19,11 @@ type OmaRepositoryRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
+type OmaRepositoryImpl struct {
+	db *sqlx.DB
+}
+
+func NewOmaRepository(db *sqlx.DB) *OmaRepositoryImpl {
+	return &OmaRepositoryImpl{db: db}
+}
+
