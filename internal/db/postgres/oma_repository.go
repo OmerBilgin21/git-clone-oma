@@ -44,3 +44,15 @@ func (r *OmaRepositoryImpl) Create(ctx context.Context, data *models.OmaReposito
 
 	return createdRepo, err
 }
+func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*models.OmaRepository, error) {
+	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
+	if err != nil {
+		log.Fatalf("error while getting: %v", err)
+	}
+
+	foundRepo := &models.OmaRepository{}
+
+	err = r.db.SelectContext(ctx, foundRepo, query, id)
+	return foundRepo, err
+
+}
