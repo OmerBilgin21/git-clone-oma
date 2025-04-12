@@ -86,3 +86,9 @@ func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *models.Oma
 
 	return updatedRepo, err
 }
+
+func (r *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
+	query := `update repositories set deleted_at = now() where id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
