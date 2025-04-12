@@ -2,19 +2,14 @@ package pkg
 
 import (
 	"context"
-	"fmt"
+	"github.com/jmoiron/sqlx"
 	"log"
-	"os"
-	"slices"
-	"time"
-
-	// "oma/internal/db"
-	// "oma/internal/db/repositories"
 	"oma/internal/db/models"
 	"oma/internal/db/postgres"
 	"oma/internal/db/repositories"
-
-	"github.com/jmoiron/sqlx"
+	"os"
+	"slices"
+	"time"
 )
 
 var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore"}
@@ -45,14 +40,11 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 		}
 
 		for _, entry := range fileIngredients {
-
-			createdRepo, err := repoContainer.OmaRepository.Create(ctx, &models.OmaRepository{
+			_, err := repoContainer.OmaRepository.Create(ctx, &models.OmaRepository{
 				FileName:   &entry.fileName,
 				CachedText: &entry.content,
 			})
 			check(err, true)
-
-			fmt.Printf("saved: %v\n", *createdRepo.CachedText)
 		}
 
 		log.Print("repository initialized succesfully")
