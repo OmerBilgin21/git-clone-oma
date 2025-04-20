@@ -13,9 +13,10 @@ func GetDb() *sqlx.DB {
 		log.Fatalf("env vars could not load: %v", err)
 	}
 
-	db, err := sqlx.Connect("storage", os.Getenv("DATABASE_URL"))
+	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+
 	if err != nil {
-		log.Fatalf("error while connection to db: %s", err)
+		log.Fatalf("error while connecting to db: %s", err)
 	}
 
 	err = db.Ping()

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/storage"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	"log"
@@ -62,7 +62,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	migrationsFolderPath := filepath.Join(curr, "internal", "db", "migrations")
+	migrationsFolderPath := filepath.Join(curr, "internal", "migrations")
 	list, err := os.ReadDir(migrationsFolderPath)
 	if err != nil {
 		log.Fatal(err)
