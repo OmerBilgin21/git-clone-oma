@@ -4,15 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"log"
 	"oma/internal/storage"
 	"os"
 	"slices"
+	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
-var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore"}
+var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore", "node_modules"}
 
 func walkDirsAndReturn() []FileIngredients {
 	currDir, err := os.Getwd()
@@ -32,8 +34,9 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 	defer cancel()
 
 	repoContainer := storage.RepositoryContainer{
-		OmaRepository:      storage.NewOmaRepository(dbIns),
-		VersionsRepository: storage.NewVersionRepository(dbIns),
+		OmaRepository:            storage.NewOmaRepository(dbIns),
+		VersionsRepository:       storage.NewVersionRepository(dbIns),
+		VersionActionsRepository: storage.NewVersionActionsRepositoryImpl(dbIns),
 	}
 
 	if slices.Contains(args, "init") {
@@ -93,6 +96,21 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 		}
 	} else if slices.Contains(args, "commit") {
+		slices.Sort(args)
+		commitIndex, wasFound := slices.BinarySearchFunc(args, "message", func(s1, target string) int {
+			if strings.HasPrefix(s1, "message") {
+				return 0
+			}
+
+			if s1 > target {
+				return 1
+			}
+			return -1
+		})
+		// commitIndex, wasFound := slices.BinarySearch(args, "message")
+		fmt.Printf("commitIndex: %v\n", commitIndex)
+		fmt.Printf("wasFound: %v\n", wasFound)
+		// if
 		FileIngredients := walkDirsAndReturn()
 
 		for _, ingredient := range FileIngredients {
@@ -119,28 +137,33 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 			} else {
 				additions, deletions := Diff(newres.CachedText.String, ingredient.content)
 
+				newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
+					RepositoryId: newres.ID,
+				})
+				check(err, true)
+
 				for i := range additions {
 					addition := additions[i]
-					_, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
-						StartX:       addition.StartX,
-						StartY:       addition.StartY,
-						EndX:         addition.EndX,
-						EndY:         addition.EndY,
-						ActionKey:    storage.AdditionKey,
-						RepositoryId: newres.ID,
+					_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+						StartX:    addition.StartX,
+						StartY:    addition.StartY,
+						EndX:      addition.EndX,
+						EndY:      addition.EndY,
+						ActionKey: storage.AdditionKey,
+						VersionId: newVersion.ID,
 					})
 					check(err, true)
 				}
 
 				for i := range deletions {
 					deletion := deletions[i]
-					_, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
-						StartX:       deletion.StartX,
-						StartY:       deletion.StartY,
-						EndX:         deletion.EndX,
-						EndY:         deletion.EndY,
-						ActionKey:    storage.DeletionKey,
-						RepositoryId: newres.ID,
+					_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+						StartX:    deletion.StartX,
+						StartY:    deletion.StartY,
+						EndX:      deletion.EndX,
+						EndY:      deletion.EndY,
+						ActionKey: storage.DeletionKey,
+						VersionId: newVersion.ID,
 					})
 					check(err, true)
 				}
