@@ -143,7 +143,7 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 						StartY:       deletion.StartY,
 						EndX:         deletion.EndX,
 						EndY:         deletion.EndY,
-						ActionKey:    models.AdditionKey,
+						ActionKey:    models.DeletionKey,
 						RepositoryId: newres.ID,
 					})
 					check(err, true)
