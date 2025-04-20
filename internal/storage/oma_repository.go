@@ -73,16 +73,15 @@ func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, er
 
 func (r *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString) (*OmaRepository, error) {
 	query := "select * from repositories where filename = $1 order by id limit 1"
-	empty, err := &OmaRepository{}, errors.New("you can not search for a null file name")
 
 	if !filename.Valid {
-		return empty, err
+		return nil, errors.New("you can not search for a null file name")
 	}
 
 	foundRepo := []OmaRepository{}
-	err = r.db.SelectContext(ctx, &foundRepo, query, filename)
+	err := r.db.SelectContext(ctx, &foundRepo, query, filename)
 	if err != nil || len(foundRepo) != 1 {
-		return empty, err
+		return nil, err
 	}
 
 	return &foundRepo[0], err
