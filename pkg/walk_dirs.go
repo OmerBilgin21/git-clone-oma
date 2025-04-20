@@ -32,10 +32,12 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		var foundElems = 0
 		for _, entry := range someList {
 			compareElem := strings.Trim(entry.Name(), " ")
+
 			if slices.Contains(processedSteps, compareElem) || slices.Contains(ignoreList, compareElem) {
 				foundElems += 1
 			}
 		}
+
 		if foundElems == len(someList) {
 			return true
 		}
@@ -52,6 +54,7 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 
 		if idk.IsDir() {
 			fmt.Printf("We faced a directory that we have not been inside: %v, going in...\n", idk.Name())
+
 			curr = filepath.Join(curr, idk.Name())
 			if WalkDirs(curr, fileIngredientsPtr, processedSteps, ignoreList) {
 				return true
@@ -63,10 +66,12 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		check(err, false)
 
 		content := string(contentBytes)
+
 		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredients{
-			fileName: idk.Name(),
+			fileName: fileNameToProcess,
 			content:  content,
 		})
+
 		processedSteps = append(processedSteps, idk.Name())
 	}
 
