@@ -65,7 +65,8 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		contentBytes, err := os.ReadFile(fileNameToProcess)
 		check(err, false)
 
-		content := string(contentBytes)
+		content := strings.ReplaceAll(string(contentBytes), "\r", "")
+		content = strings.ReplaceAll(content, "\n", "\n")
 
 		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredients{
 			fileName: fileNameToProcess,

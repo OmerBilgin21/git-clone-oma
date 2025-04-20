@@ -20,7 +20,6 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 				y++
 			}
 
-			// next step of newArr is matching the oldArr's char gotta add ma boi
 		} else if x+1 < len(newArr) && newArr[x+1] == oldArr[y] {
 			additions = append(additions, models.Coordinate{
 				StartX: x,
@@ -30,7 +29,6 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 			})
 			x++
 
-			// next step of oldArr is matching the newArr's char gotta delete ma boi
 		} else if y+1 < len(oldArr) && oldArr[y+1] == newArr[x] {
 			deletions = append(deletions, models.Coordinate{
 				StartX: x,
@@ -40,7 +38,6 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 			})
 			y++
 
-			// :fire: this is fine :fire:
 		} else {
 			additions = append(additions, models.Coordinate{
 				StartX: x,
