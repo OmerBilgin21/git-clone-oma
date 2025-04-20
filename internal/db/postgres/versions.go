@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"oma/internal/db/models"
@@ -10,9 +9,9 @@ import (
 
 type VersionRepository interface {
 	Create(ctx context.Context, data *models.Versions) (*models.Versions, error)
-	Get(ctx context.Context, id int) (*models.Versions, error)
-	Update(ctx context.Context, id int, data *models.Versions) (*models.Versions, error)
-	Delete(ctx context.Context, id int) error
+	// Get(ctx context.Context, id int) (*models.Versions, error)
+	// Update(ctx context.Context, id int, data *models.Versions) (*models.Versions, error)
+	// Delete(ctx context.Context, id int) error
 }
 
 type VersionRepositoryImpl struct {
@@ -30,19 +29,19 @@ func versionsToMap(data *models.Versions) map[string]any {
 	}
 }
 
-func NewVersionRepository(db *sqlx.DB) *OmaRepositoryImpl {
-	return &OmaRepositoryImpl{db: db}
+func NewVersionRepository(db *sqlx.DB) *VersionRepositoryImpl {
+	return &VersionRepositoryImpl{db: db}
 }
 
 func (r *VersionRepositoryImpl) Create(ctx context.Context, data *models.Versions) (*models.Versions, error) {
 	query, args, err := Sq.Insert("versions").SetMap(versionsToMap(data)).Suffix("returning *").ToSql()
+
 	if err != nil {
-		log.Fatalf("error while creating versions, %v", err)
+		log.Fatalf("error while generating the create versions query, %v", err)
 	}
-	fmt.Printf("query: %v\n", query)
-	fmt.Printf("args: %v\n", args)
 
 	createdRepo := &models.Versions{}
+	err = r.db.GetContext(ctx, createdRepo, query, args...)
 
 	return createdRepo, err
 }

@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"oma/internal/db/models"
 	"oma/internal/db/postgres"
@@ -30,10 +31,11 @@ func walkDirsAndReturn() []FileIngredients {
 func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 	defer dbIns.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	omaRepo := postgres.NewOmaRepository(dbIns)
+	versionRepo := postgres.NewVersionRepository(dbIns)
 	repoContainer := repositories.RepositoryContainer{
 		OmaRepository: omaRepo,
 	}
@@ -64,9 +66,7 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 		log.Print("repository initialized succesfully")
 		return
-	}
-
-	if slices.Contains(args, "diff") {
+	} else if slices.Contains(args, "diff") {
 		fileIngredients := walkDirsAndReturn()
 
 		for _, ingredient := range fileIngredients {
@@ -95,6 +95,62 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 				}
 			}
 
+		}
+	} else if slices.Contains(args, "commit") {
+		FileIngredients := walkDirsAndReturn()
+
+		for _, ingredient := range FileIngredients {
+			newres, err := omaRepo.GetLatestByFileName(ctx, sql.NullString{
+				String: ingredient.fileName,
+				Valid:  true,
+			})
+			check(err, false)
+
+			if newres.ID == 0 {
+				fmt.Printf("No previous version of the file, creating cache...")
+				omaRepo.Create(ctx, &models.OmaRepository{
+					FileName: sql.NullString{
+						Valid:  true,
+						String: ingredient.fileName,
+					},
+					CachedText: sql.NullString{
+						Valid:  true,
+						String: ingredient.content,
+					},
+				})
+
+				check(err, true)
+			} else {
+				additions, deletions := Diff(newres.CachedText.String, ingredient.content)
+
+				for i := range additions {
+					addition := additions[i]
+					_, err := versionRepo.Create(ctx, &models.Versions{
+						StartX:       addition.StartX,
+						StartY:       addition.StartY,
+						EndX:         addition.EndX,
+						EndY:         addition.EndY,
+						ActionKey:    models.AdditionKey,
+						RepositoryId: newres.ID,
+					})
+					check(err, true)
+				}
+
+				for i := range deletions {
+					deletion := deletions[i]
+					_, err := versionRepo.Create(ctx, &models.Versions{
+						StartX:       deletion.StartX,
+						StartY:       deletion.StartY,
+						EndX:         deletion.EndX,
+						EndY:         deletion.EndY,
+						ActionKey:    models.AdditionKey,
+						RepositoryId: newres.ID,
+					})
+					check(err, true)
+				}
+
+				log.Printf("Commit created succesfully for file: %v\n", ingredient.fileName)
+			}
 		}
 	}
 }
