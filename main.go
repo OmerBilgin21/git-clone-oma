@@ -1,13 +1,13 @@
 package main
 
 import (
-	"oma/internal/db"
+	"oma/internal"
 	"oma/pkg"
 	"os"
 )
 
 func main() {
 	cliArgs := os.Args[1:]
-	dbIns := db.GetDb()
+	dbIns := internal.GetDb()
 	pkg.ParseAndDispatch(cliArgs, dbIns)
 }

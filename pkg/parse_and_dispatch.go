@@ -4,15 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"log"
-	"oma/internal/db/models"
-	"oma/internal/db/postgres"
-	"oma/internal/db/repositories"
+	"oma/internal/storage"
 	"os"
 	"slices"
 	"time"
-
-	"github.com/jmoiron/sqlx"
 )
 
 var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore"}
@@ -34,10 +31,9 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	omaRepo := postgres.NewOmaRepository(dbIns)
-	versionRepo := postgres.NewVersionRepository(dbIns)
-	repoContainer := repositories.RepositoryContainer{
-		OmaRepository: omaRepo,
+	repoContainer := storage.RepositoryContainer{
+		OmaRepository:      storage.NewOmaRepository(dbIns),
+		VersionsRepository: storage.NewVersionRepository(dbIns),
 	}
 
 	if slices.Contains(args, "init") {
@@ -50,7 +46,7 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 		fileIngredients := walkDirsAndReturn()
 
 		for _, entry := range fileIngredients {
-			_, err := repoContainer.OmaRepository.Create(ctx, &models.OmaRepository{
+			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 				FileName: sql.NullString{
 					String: entry.fileName,
 					Valid:  true,
@@ -70,14 +66,14 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 		fileIngredients := walkDirsAndReturn()
 
 		for _, ingredient := range fileIngredients {
-			newres, err := omaRepo.GetLatestByFileName(ctx, sql.NullString{
+			newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 				String: ingredient.fileName,
 				Valid:  true,
 			})
 			check(err, false)
 
 			if newres.ID == 0 {
-				omaRepo.Create(ctx, &models.OmaRepository{
+				repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 					FileName: sql.NullString{
 						String: ingredient.fileName,
 						Valid:  true,
@@ -100,7 +96,7 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 		FileIngredients := walkDirsAndReturn()
 
 		for _, ingredient := range FileIngredients {
-			newres, err := omaRepo.GetLatestByFileName(ctx, sql.NullString{
+			newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 				String: ingredient.fileName,
 				Valid:  true,
 			})
@@ -108,7 +104,7 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 			if newres.ID == 0 {
 				fmt.Printf("No previous version of the file, creating cache...")
-				omaRepo.Create(ctx, &models.OmaRepository{
+				repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 					FileName: sql.NullString{
 						Valid:  true,
 						String: ingredient.fileName,
@@ -125,12 +121,12 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 				for i := range additions {
 					addition := additions[i]
-					_, err := versionRepo.Create(ctx, &models.Versions{
+					_, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 						StartX:       addition.StartX,
 						StartY:       addition.StartY,
 						EndX:         addition.EndX,
 						EndY:         addition.EndY,
-						ActionKey:    models.AdditionKey,
+						ActionKey:    storage.AdditionKey,
 						RepositoryId: newres.ID,
 					})
 					check(err, true)
@@ -138,12 +134,12 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 				for i := range deletions {
 					deletion := deletions[i]
-					_, err := versionRepo.Create(ctx, &models.Versions{
+					_, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 						StartX:       deletion.StartX,
 						StartY:       deletion.StartY,
 						EndX:         deletion.EndX,
 						EndY:         deletion.EndY,
-						ActionKey:    models.DeletionKey,
+						ActionKey:    storage.DeletionKey,
 						RepositoryId: newres.ID,
 					})
 					check(err, true)

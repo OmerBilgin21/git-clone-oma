@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"oma/internal/db/models"
 	"strings"
 )
 
@@ -10,8 +9,8 @@ var Green = "\033[32m"
 var Reset = "\033[0m"
 
 func ColourTheDiffs(
-	additions []models.Coordinate,
-	deletions []models.Coordinate,
+	additions []Coordinate,
+	deletions []Coordinate,
 	oldStr string,
 	newStr string,
 ) (string, string) {

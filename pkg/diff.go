@@ -1,14 +1,20 @@
 package pkg
 
 import (
-	"oma/internal/db/models"
 	"strings"
 )
 
-func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinate) {
+type Coordinate struct {
+	StartX int
+	StartY int
+	EndX   int
+	EndY   int
+}
+
+func Diff(oldStr string, newStr string) ([]Coordinate, []Coordinate) {
 	oldArr, newArr := strings.Split(oldStr, ""), strings.Split(newStr, "")
-	var additions []models.Coordinate
-	var deletions []models.Coordinate
+	var additions []Coordinate
+	var deletions []Coordinate
 
 	x, y := 0, 0
 	for x < len(newArr) && y < len(oldArr) {
@@ -21,7 +27,7 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 			}
 
 		} else if x+1 < len(newArr) && newArr[x+1] == oldArr[y] {
-			additions = append(additions, models.Coordinate{
+			additions = append(additions, Coordinate{
 				StartX: x,
 				StartY: y,
 				EndX:   x + 1,
@@ -30,7 +36,7 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 			x++
 
 		} else if y+1 < len(oldArr) && oldArr[y+1] == newArr[x] {
-			deletions = append(deletions, models.Coordinate{
+			deletions = append(deletions, Coordinate{
 				StartX: x,
 				StartY: y,
 				EndX:   x,
@@ -39,14 +45,14 @@ func Diff(oldStr string, newStr string) ([]models.Coordinate, []models.Coordinat
 			y++
 
 		} else {
-			additions = append(additions, models.Coordinate{
+			additions = append(additions, Coordinate{
 				StartX: x,
 				StartY: y,
 				EndX:   x + 1,
 				EndY:   y,
 			})
 
-			deletions = append(deletions, models.Coordinate{
+			deletions = append(deletions, Coordinate{
 				StartX: x,
 				StartY: y,
 				EndX:   x,

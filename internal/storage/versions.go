@@ -1,16 +1,15 @@
-package postgres
+package storage
 
 import (
 	"context"
 	"github.com/jmoiron/sqlx"
 	"log"
-	"oma/internal/db/models"
 )
 
 type VersionRepository interface {
-	Create(ctx context.Context, data *models.Versions) (*models.Versions, error)
-	// Get(ctx context.Context, id int) (*models.Versions, error)
-	// Update(ctx context.Context, id int, data *models.Versions) (*models.Versions, error)
+	Create(ctx context.Context, data *Versions) (*Versions, error)
+	// Get(ctx context.Context, id int) (*Versions, error)
+	// Update(ctx context.Context, id int, data *Versions) (*Versions, error)
 	// Delete(ctx context.Context, id int) error
 }
 
@@ -18,7 +17,7 @@ type VersionRepositoryImpl struct {
 	db *sqlx.DB
 }
 
-func versionsToMap(data *models.Versions) map[string]any {
+func versionsToMap(data *Versions) map[string]any {
 	return map[string]any{
 		"start_x":       data.StartX,
 		"start_y":       data.StartY,
@@ -33,14 +32,14 @@ func NewVersionRepository(db *sqlx.DB) *VersionRepositoryImpl {
 	return &VersionRepositoryImpl{db: db}
 }
 
-func (r *VersionRepositoryImpl) Create(ctx context.Context, data *models.Versions) (*models.Versions, error) {
-	query, args, err := Sq.Insert("versions").SetMap(versionsToMap(data)).Suffix("returning *").ToSql()
+func (r *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Versions, error) {
+	query, args, err := sq.Insert("versions").SetMap(versionsToMap(data)).Suffix("returning *").ToSql()
 
 	if err != nil {
 		log.Fatalf("error while generating the create versions query, %v", err)
 	}
 
-	createdRepo := &models.Versions{}
+	createdRepo := &Versions{}
 	err = r.db.GetContext(ctx, createdRepo, query, args...)
 
 	return createdRepo, err

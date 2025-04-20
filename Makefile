@@ -1,5 +1,5 @@
-MIGRATE_CMD = go run cmd/migrate/runner.go
-RUN_CMD = go run cmd/oma/main.go
+MIGRATE_CMD = go run cmd/db.go
+RUN_CMD = go run main.go
 
 migrate:
 	${MIGRATE_CMD} migrate

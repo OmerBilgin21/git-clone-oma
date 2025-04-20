@@ -1,16 +1,9 @@
-package models
+package storage
 
 import (
 	"database/sql"
 	"time"
 )
-
-type Coordinate struct {
-	StartX int
-	StartY int
-	EndX   int
-	EndY   int
-}
 
 type Keys string
 
