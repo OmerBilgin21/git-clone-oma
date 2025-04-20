@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	_ "database/sql"
+	"errors"
 	"log"
 	"oma/internal/db/models"
 	"strconv"
@@ -14,6 +16,8 @@ import (
 type OmaRepositoryRepository interface {
 	Create(ctx context.Context, data *models.OmaRepository) (*models.OmaRepository, error)
 	Get(ctx context.Context, id int) (*models.OmaRepository, error)
+	GetMany(ctx context.Context, ids []int) (*[]models.OmaRepository, error)
+	GetLatestByFileName(ctx context.Context, filename sql.NullString) (*models.OmaRepository, error)
 	Update(ctx context.Context, id int, data *models.OmaRepository) (*models.OmaRepository, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -21,8 +25,6 @@ type OmaRepositoryRepository interface {
 type OmaRepositoryImpl struct {
 	db *sqlx.DB
 }
-
-var sq = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 func NewOmaRepository(db *sqlx.DB) *OmaRepositoryImpl {
 	return &OmaRepositoryImpl{db: db}
@@ -33,9 +35,23 @@ func (r *OmaRepositoryImpl) Create(ctx context.Context, data *models.OmaReposito
 	values ($1, $2) 
 	returning *`
 
+	var cachedText, fileName any
+
+	if data.CachedText.Valid {
+		cachedText = data.CachedText.String
+	} else {
+		cachedText = nil
+	}
+
+	if data.FileName.Valid {
+		fileName = data.FileName.String
+	} else {
+		fileName = nil
+	}
+
 	createdRepo := &models.OmaRepository{}
 
-	err := r.db.GetContext(ctx, createdRepo, query, *data.CachedText, *data.FileName)
+	err := r.db.GetContext(ctx, createdRepo, query, cachedText, fileName)
 	if err != nil {
 		log.Print(err)
 	}
@@ -44,7 +60,7 @@ func (r *OmaRepositoryImpl) Create(ctx context.Context, data *models.OmaReposito
 }
 
 func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*models.OmaRepository, error) {
-	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
+	query, _, err := Sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
 	if err != nil {
 		log.Fatalf("error while getting: %v", err)
 	}
@@ -56,14 +72,43 @@ func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*models.OmaReposit
 
 }
 
-func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *models.OmaRepository) (*models.OmaRepository, error) {
-	qb := sq.Update("repositories")
+func (r *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString) (*models.OmaRepository, error) {
+	query := "select * from repositories where filename = $1 order by id limit 1"
+	empty, err := &models.OmaRepository{}, errors.New("you can not search for a null file name")
 
-	if data.FileName != nil {
-		qb = qb.Set("filename", *data.FileName)
+	if !filename.Valid {
+		return empty, err
 	}
-	if data.CachedText != nil {
-		qb = qb.Set("cached_text", *data.CachedText)
+
+	foundRepo := []models.OmaRepository{}
+	err = r.db.SelectContext(ctx, &foundRepo, query, filename)
+	if err != nil || len(foundRepo) != 1 {
+		return empty, err
+	}
+
+	return &foundRepo[0], err
+}
+
+func (r *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]models.OmaRepository, error) {
+	query, args, err := Sq.Select("*").From("repositories").Where(squirrel.Eq{"id": ids}).ToSql()
+	if err != nil {
+		log.Fatalf("error while getting: %v", err)
+	}
+
+	foundRepos := []models.OmaRepository{}
+	err = r.db.SelectContext(ctx, &foundRepos, query, args...)
+
+	return &foundRepos, err
+}
+
+func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *models.OmaRepository) (*models.OmaRepository, error) {
+	qb := Sq.Update("repositories")
+
+	if data.FileName.Valid {
+		qb = qb.Set("filename", data.FileName.String)
+	}
+	if data.CachedText.Valid {
+		qb = qb.Set("cached_text", data.CachedText.String)
 	}
 
 	qb = qb.Where(squirrel.Eq{"id": strconv.Itoa(id)}).Suffix("returning *")
