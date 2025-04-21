@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -22,8 +21,8 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 	rootDir := filepath.Base(rootDirPath)
 	currDirName := filepath.Base(curr)
 
+	// we have come to an end node on our directory tree and it is not the root node, going one step back
 	if rootDir != currDirName && slices.Contains(processedSteps, currDirName) {
-		fmt.Printf("we have come to an end node on our directory tree and it is not the root node, going one step back!\n")
 		processedSteps = append(processedSteps, currDirName)
 		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList) {
 			return true
@@ -51,10 +50,8 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		if slices.Contains(processedSteps, fileEntry.Name()) {
 			continue
 		}
-
+		// We faced a directory that we have not been inside: %v, going in...
 		if fileEntry.IsDir() {
-			fmt.Printf("We faced a directory that we have not been inside: %v, going in...\n", fileEntry.Name())
-
 			curr = filepath.Join(curr, fileEntry.Name())
 			if WalkDirs(curr, fileIngredientsPtr, processedSteps, ignoreList) {
 				return true
@@ -66,7 +63,9 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		check(err, false)
 
 		content := strings.ReplaceAll(string(contentBytes), "\r", "")
-		content = strings.ReplaceAll(content, "\n", "\n")
+		// content = strings.ReplaceAll(content, "\n", "\n")
+
+		content = strings.ReplaceAll(content, "\t", "  ")
 
 		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredients{
 			fileName: fileNameToProcess,
@@ -76,8 +75,9 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		processedSteps = append(processedSteps, fileEntry.Name())
 	}
 
+	// Everything has been processed in this dir
+	// going back
 	if currDirName != rootDir {
-		fmt.Printf("Everything has been processed here: %v, and it's not the root directory, going back...\n", currDirName)
 		processedSteps = append(processedSteps, currDirName)
 		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList) {
 			return true
