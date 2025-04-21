@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"slices"
@@ -39,6 +38,6 @@ func check(err error, fail bool) {
 		if fail {
 			log.Fatal(err)
 		}
-		fmt.Printf("err: %v\n", err)
+		log.Printf("err: %v\n", err)
 	}
 }
