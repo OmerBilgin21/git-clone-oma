@@ -11,7 +11,7 @@ type Coordinate struct {
 	EndY   int
 }
 
-func Diff(oldStr string, newStr string) ([]Coordinate, []Coordinate) {
+func GetDiffs(oldStr string, newStr string) ([]Coordinate, []Coordinate) {
 	oldArr, newArr := strings.Split(oldStr, ""), strings.Split(newStr, "")
 	var additions []Coordinate
 	var deletions []Coordinate
