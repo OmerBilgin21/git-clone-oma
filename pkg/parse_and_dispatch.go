@@ -8,7 +8,7 @@ import (
 	"oma/internal/storage"
 	"os"
 	"slices"
-	"strings"
+	_ "strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -37,6 +37,15 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 		OmaRepository:            storage.NewOmaRepository(dbIns),
 		VersionsRepository:       storage.NewVersionRepository(dbIns),
 		VersionActionsRepository: storage.NewVersionActionsRepositoryImpl(dbIns),
+	}
+
+	parseArgs := NewCLIArgsParser(args)
+	parseArgs.Validate()
+	command := parseArgs.GetCommand()
+	namedArg, namedValue := parseArgs.GetPrefixAndValue("message")
+	if command == "commit" {
+		fmt.Printf("namedArg: %v\n", namedArg)
+		fmt.Printf("namedValue: %v\n", namedValue)
 	}
 
 	if slices.Contains(args, "init") {
@@ -87,30 +96,11 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 					},
 				})
 			} else {
-				additions, deletions := Diff(newres.CachedText.String, ingredient.content)
-				oldColoured, newColoured := ColourTheDiffs(additions, deletions, newres.CachedText.String, ingredient.content)
-				if len(additions) > 0 || len(deletions) > 0 {
-					RenderDiffs(oldColoured, newColoured)
-				}
+				RenderDiffs(newres.CachedText.String, ingredient.content, newres.FileName.String, ingredient.fileName)
 			}
 
 		}
 	} else if slices.Contains(args, "commit") {
-		slices.Sort(args)
-		commitIndex, wasFound := slices.BinarySearchFunc(args, "message", func(s1, target string) int {
-			if strings.HasPrefix(s1, "message") {
-				return 0
-			}
-
-			if s1 > target {
-				return 1
-			}
-			return -1
-		})
-		// commitIndex, wasFound := slices.BinarySearch(args, "message")
-		fmt.Printf("commitIndex: %v\n", commitIndex)
-		fmt.Printf("wasFound: %v\n", wasFound)
-		// if
 		FileIngredients := walkDirsAndReturn()
 
 		for _, ingredient := range FileIngredients {
@@ -135,11 +125,12 @@ func ParseAndDispatch(args []string, dbIns *sqlx.DB) {
 
 				check(err, true)
 			} else {
-				additions, deletions := Diff(newres.CachedText.String, ingredient.content)
+				additions, deletions := GetDiffs(newres.CachedText.String, ingredient.content)
 
 				newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 					RepositoryId: newres.ID,
 				})
+
 				check(err, true)
 
 				for i := range additions {
