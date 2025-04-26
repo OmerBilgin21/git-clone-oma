@@ -23,7 +23,7 @@ func NewVersionRepository(db *sqlx.DB) *VersionRepositoryImpl {
 	return &VersionRepositoryImpl{db: db}
 }
 
-func (self *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Versions, error) {
+func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Versions, error) {
 	query, args, err := sq.Insert("versions").Columns("repository_id").Values(data.RepositoryId).Suffix("returning *").ToSql()
 
 	if err != nil {
@@ -31,12 +31,12 @@ func (self *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (
 	}
 
 	createdRepo := &Versions{}
-	err = self.db.GetContext(ctx, createdRepo, query, args...)
+	err = versions.db.GetContext(ctx, createdRepo, query, args...)
 
 	return createdRepo, err
 }
 
-func (self *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, error) {
+func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, error) {
 	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"id": id,
 	}).ToSql()
@@ -46,12 +46,12 @@ func (self *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, 
 	}
 
 	foundRepo := &Versions{}
-	err = self.db.SelectContext(ctx, foundRepo, query, args...)
+	err = versions.db.SelectContext(ctx, foundRepo, query, args...)
 
 	return foundRepo, err
 }
 
-func (self *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, *[]Versions, error) {
+func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, *[]Versions, error) {
 	additionQuery, additionArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
 		"action_key":    AdditionKey,
@@ -67,10 +67,10 @@ func (self *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, 
 	}
 
 	additions := []Versions{}
-	err = self.db.GetContext(ctx, &additions, additionQuery, additionArgs...)
+	err = versions.db.GetContext(ctx, &additions, additionQuery, additionArgs...)
 
 	deletions := []Versions{}
-	err = self.db.GetContext(ctx, &deletions, deletionQuery, deletionArgs...)
+	err = versions.db.GetContext(ctx, &deletions, deletionQuery, deletionArgs...)
 
 	return nil, nil, nil
 }

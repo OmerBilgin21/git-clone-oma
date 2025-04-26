@@ -29,7 +29,7 @@ func NewOmaRepository(db *sqlx.DB) *OmaRepositoryImpl {
 	return &OmaRepositoryImpl{db: db}
 }
 
-func (self *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error) {
 	query := `insert into repositories (cached_text, filename) 
 	values ($1, $2) 
 	returning *`
@@ -50,7 +50,7 @@ func (self *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) 
 
 	createdRepo := &OmaRepository{}
 
-	err := self.db.GetContext(ctx, createdRepo, query, cachedText, fileName)
+	err := omaRepo.db.GetContext(ctx, createdRepo, query, cachedText, fileName)
 	if err != nil {
 		log.Print(err)
 	}
@@ -58,7 +58,7 @@ func (self *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) 
 	return createdRepo, err
 }
 
-func (self *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
 	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
 	if err != nil {
 		log.Fatalf("error while getting: %v", err)
@@ -66,12 +66,12 @@ func (self *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository,
 
 	foundRepo := &OmaRepository{}
 
-	err = self.db.SelectContext(ctx, foundRepo, query, id)
+	err = omaRepo.db.SelectContext(ctx, foundRepo, query, id)
 	return foundRepo, err
 
 }
 
-func (self *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString) (*OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString) (*OmaRepository, error) {
 	query := "select * from repositories where filename = $1 order by id limit 1"
 
 	if !filename.Valid {
@@ -79,7 +79,7 @@ func (self *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename
 	}
 
 	foundRepo := []OmaRepository{}
-	err := self.db.SelectContext(ctx, &foundRepo, query, filename)
+	err := omaRepo.db.SelectContext(ctx, &foundRepo, query, filename)
 	if err != nil || len(foundRepo) != 1 {
 		return nil, err
 	}
@@ -87,19 +87,19 @@ func (self *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename
 	return &foundRepo[0], err
 }
 
-func (self *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{"id": ids}).ToSql()
 	if err != nil {
 		log.Fatalf("error while getting: %v", err)
 	}
 
 	foundRepos := []OmaRepository{}
-	err = self.db.SelectContext(ctx, &foundRepos, query, args...)
+	err = omaRepo.db.SelectContext(ctx, &foundRepos, query, args...)
 
 	return &foundRepos, err
 }
 
-func (self *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error) {
 	qb := sq.Update("repositories")
 
 	if data.FileName.Valid {
@@ -117,13 +117,13 @@ func (self *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaRepo
 	}
 
 	updatedRepo := &OmaRepository{}
-	err = self.db.GetContext(ctx, updatedRepo, query, args...)
+	err = omaRepo.db.GetContext(ctx, updatedRepo, query, args...)
 
 	return updatedRepo, err
 }
 
-func (self *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
+func (omaRepo *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 	query := `update repositories set deleted_at = now() where id = $1`
-	_, err := self.db.ExecContext(ctx, query, id)
+	_, err := omaRepo.db.ExecContext(ctx, query, id)
 	return err
 }

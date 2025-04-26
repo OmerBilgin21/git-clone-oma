@@ -32,7 +32,7 @@ func NewVersionActionsRepositoryImpl(db *sqlx.DB) *VersionActionsRepositoryImpl 
 	return &VersionActionsRepositoryImpl{db: db}
 }
 
-func (self *VersionActionsRepositoryImpl) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
+func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
 	query, args, err := sq.Insert("version_actions").SetMap(versionActionsToMap(data)).Suffix("returning *").ToSql()
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (self *VersionActionsRepositoryImpl) Create(ctx context.Context, data *Vers
 	}
 
 	createdRepo := &VersionActions{}
-	err = self.db.GetContext(ctx, createdRepo, query, args...)
+	err = versionActions.db.GetContext(ctx, createdRepo, query, args...)
 
 	return createdRepo, err
 }
