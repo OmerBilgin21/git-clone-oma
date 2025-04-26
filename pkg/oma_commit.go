@@ -31,7 +31,6 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 					String: ingredient.content,
 				},
 			})
-
 		} else {
 			additions, deletions := GetDiff(newres.CachedText.String, ingredient.content)
 

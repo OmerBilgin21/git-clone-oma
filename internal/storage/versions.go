@@ -2,11 +2,9 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
-	"log"
 )
 
 type VersionRepository interface {
@@ -27,7 +25,7 @@ func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Version
 	query, args, err := sq.Insert("versions").Columns("repository_id").Values(data.RepositoryId).Suffix("returning *").ToSql()
 
 	if err != nil {
-		log.Fatalf("error while generating the create versions query, %v", err)
+		return nil, fmt.Errorf("error while generating the create versions query, %v", err)
 	}
 
 	createdRepo := &Versions{}
@@ -42,7 +40,7 @@ func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versio
 	}).ToSql()
 
 	if err != nil {
-		log.Fatalf("error while generating the create versions query, %v", err)
+		return nil, fmt.Errorf("error while generating the create versions query: %v", err)
 	}
 
 	foundRepo := &Versions{}
@@ -63,7 +61,7 @@ func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Conte
 	}).Limit(1).ToSql()
 
 	if err != nil {
-		return nil, nil, errors.New(fmt.Sprintf("error while building GetLatestByRepositoryId query: %s\n", err))
+		return nil, nil, fmt.Errorf("error while building GetLatestByRepositoryId query: %s\n", err)
 	}
 
 	additions := []Versions{}

@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"errors"
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -74,7 +74,7 @@ func NewCLIArgsParser(args []string) *CLIArgsParser {
 
 func (parser *CLIArgsParser) Validate() error {
 	if len(parser.parsed.commands) > 1 {
-		return errors.New("can not process more than one argument at a time")
+		return fmt.Errorf("can not process more than one argument at a time")
 	}
 
 	return nil

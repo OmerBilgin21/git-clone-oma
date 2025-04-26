@@ -29,7 +29,9 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 				},
 			})
 		} else {
-			RenderDiffs(newres.CachedText.String, ingredient.content, newres.FileName.String, ingredient.fileName)
+			if err := RenderDiffs(newres.CachedText.String, ingredient.content, newres.FileName.String, ingredient.fileName); err != nil {
+				return err
+			}
 		}
 	}
 

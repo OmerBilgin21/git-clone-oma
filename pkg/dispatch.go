@@ -46,14 +46,15 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 
 	switch cmd {
 	case internal.Init:
-
 		if err := GitInit(ctx, &repoContainer, &fileIngredients); err != nil {
 			log.Fatalf("error while initialising repository: %s", err)
 		}
+
 	case internal.Commit:
 		if err := GitCommit(ctx, &repoContainer, &fileIngredients); err != nil {
 			log.Fatalf("error while committing your changes: %s", err)
 		}
+
 	case internal.Diff:
 		if err := GitDiff(ctx, &repoContainer, &fileIngredients); err != nil {
 			log.Fatalf("diff could not be displayed: %s", err)

@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -36,7 +36,7 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 	query, args, err := sq.Insert("version_actions").SetMap(versionActionsToMap(data)).Suffix("returning *").ToSql()
 
 	if err != nil {
-		log.Fatalf("error while generating the create version actions query, %v", err)
+		return nil, fmt.Errorf("error while generating the create version actions query: %v", err)
 	}
 
 	createdRepo := &VersionActions{}

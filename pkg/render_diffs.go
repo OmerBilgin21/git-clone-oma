@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -33,10 +32,6 @@ func renderSideBySideDiff(oldColoured, newColoured, oldName, newName string, hea
 			continue
 		}
 
-		// if strLen(oldLine) != headerWidth || strLen(newLine) != headerWidth {
-		// 	fmt.Printf("MISMATCH @ line %d: old=%d, new=%d\n", i, strLen(oldLine), strLen(newLine))
-		// }
-
 		// FIXME: there's a bug with every line having an extra EOF when visualizing right now
 		// not due to actual files having those or the newline below -dunno why-
 		fmt.Printf("%s | %s\n", oldLine, newLine)
@@ -44,18 +39,20 @@ func renderSideBySideDiff(oldColoured, newColoured, oldName, newName string, hea
 	}
 }
 
-func RenderDiffs(oldContent, newContent, oldName, newName string) {
+func RenderDiffs(oldContent, newContent, oldName, newName string) error {
 	additions, deletions := GetDiff(oldContent, newContent)
+
 	if len(additions) > 0 || len(deletions) > 0 {
 		var headerWidth = 50
 		normalizedOld, normalizedNew, err := normalizeLines(oldContent, newContent, headerWidth)
 
 		if err != nil {
-			check(errors.Join(err, errors.New("diff view would be broken therefore it won't be shown for this file")), false)
-			return
+			return fmt.Errorf("diff view would be broken therefore it won't be shown for this file: %v", err)
 		}
 
 		oldColoured, newColoured := ColourTheDiffs(additions, deletions, normalizedOld, normalizedNew)
 		renderSideBySideDiff(oldColoured, newColoured, oldName, newName, headerWidth)
 	}
+
+	return nil
 }

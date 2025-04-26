@@ -4,8 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "database/sql"
-	"errors"
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/Masterminds/squirrel"
@@ -51,8 +50,9 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 	createdRepo := &OmaRepository{}
 
 	err := omaRepo.db.GetContext(ctx, createdRepo, query, cachedText, fileName)
+
 	if err != nil {
-		log.Print(err)
+		return nil, fmt.Errorf("error while creating an oma repository %v", err)
 	}
 
 	return createdRepo, err
@@ -60,8 +60,9 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 
 func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
 	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
+
 	if err != nil {
-		log.Fatalf("error while getting: %v", err)
+		return nil, fmt.Errorf("error while getting: %v", err)
 	}
 
 	foundRepo := &OmaRepository{}
@@ -75,7 +76,7 @@ func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filen
 	query := "select * from repositories where filename = $1 order by id limit 1"
 
 	if !filename.Valid {
-		return nil, errors.New("you can not search for a null file name")
+		return nil, fmt.Errorf("you can not search for a null file name")
 	}
 
 	foundRepo := []OmaRepository{}
@@ -90,7 +91,7 @@ func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filen
 func (omaRepo *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{"id": ids}).ToSql()
 	if err != nil {
-		log.Fatalf("error while getting: %v", err)
+		return nil, fmt.Errorf("error while getting: %v", err)
 	}
 
 	foundRepos := []OmaRepository{}
@@ -113,7 +114,7 @@ func (omaRepo *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaR
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		log.Fatalf("error while updating: %v\n", err)
+		return nil, fmt.Errorf("error while updating: %v\n", err)
 	}
 
 	updatedRepo := &OmaRepository{}

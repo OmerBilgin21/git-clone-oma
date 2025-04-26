@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -27,6 +27,7 @@ func consolidateShortLine(line string, width int) string {
 	text = strings.ReplaceAll(text, "\t", "  ")
 
 	visible := strLen(text)
+
 	if visible == width || visible > width {
 		return line
 	}
@@ -92,7 +93,7 @@ func normalizeLines(oldText, newText string, width int) (string, string, error) 
 		} else if side == &newLines {
 			oldLines = slices.Insert(oldLines, i, consolidateShortLine("", width))
 		} else {
-			return "", "", errors.New("string length consolidation failed, ")
+			return "", "", fmt.Errorf("string length consolidation failed")
 		}
 
 		if i+1 < len(newLines) && i+1 < len(oldLines) {
