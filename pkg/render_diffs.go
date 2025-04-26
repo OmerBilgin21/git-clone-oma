@@ -45,7 +45,7 @@ func renderSideBySideDiff(oldColoured, newColoured, oldName, newName string, hea
 }
 
 func RenderDiffs(oldContent, newContent, oldName, newName string) {
-	additions, deletions := GetDiffs(oldContent, newContent)
+	additions, deletions := GetDiff(oldContent, newContent)
 	if len(additions) > 0 || len(deletions) > 0 {
 		var headerWidth = 50
 		normalizedOld, normalizedNew, err := normalizeLines(oldContent, newContent, headerWidth)
