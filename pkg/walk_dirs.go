@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore", "node_modules"}
+
 type FileIngredients struct {
 	fileName string
 	content  string
