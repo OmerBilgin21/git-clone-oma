@@ -8,13 +8,16 @@ import (
 	"oma/internal/storage"
 )
 
-func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) {
+func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
 	for _, ingredient := range *fileIngredients {
 		newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
 		})
-		check(err, false)
+
+		if err != nil {
+			return err
+		}
 
 		if newres.ID == 0 {
 			fmt.Printf("No previous version of the file, creating cache...")
@@ -29,7 +32,6 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				},
 			})
 
-			check(err, true)
 		} else {
 			additions, deletions := GetDiff(newres.CachedText.String, ingredient.content)
 
@@ -37,7 +39,9 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				RepositoryId: newres.ID,
 			})
 
-			check(err, true)
+			if err != nil {
+				return err
+			}
 
 			for i := range additions {
 				addition := additions[i]
@@ -49,7 +53,11 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 					ActionKey: storage.AdditionKey,
 					VersionId: newVersion.ID,
 				})
-				check(err, true)
+
+				if err != nil {
+					return err
+				}
+
 			}
 
 			for i := range deletions {
@@ -62,10 +70,15 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 					ActionKey: storage.DeletionKey,
 					VersionId: newVersion.ID,
 				})
-				check(err, true)
+
+				if err != nil {
+					return err
+				}
+
 			}
 		}
 	}
 
 	log.Printf("diff committed successfully")
+	return nil
 }

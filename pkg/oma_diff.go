@@ -6,13 +6,16 @@ import (
 	"oma/internal/storage"
 )
 
-func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) {
+func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
 	for _, ingredient := range *fileIngredients {
 		newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
 		})
-		check(err, false)
+
+		if err != nil {
+			return err
+		}
 
 		if newres.ID == 0 {
 			repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
@@ -28,6 +31,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 		} else {
 			RenderDiffs(newres.CachedText.String, ingredient.content, newres.FileName.String, ingredient.fileName)
 		}
-
 	}
+
+	return nil
 }

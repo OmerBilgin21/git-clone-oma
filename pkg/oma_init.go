@@ -7,7 +7,7 @@ import (
 	"oma/internal/storage"
 )
 
-func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) {
+func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
 	for _, entry := range *fileIngredients {
 		_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 			FileName: sql.NullString{
@@ -20,8 +20,12 @@ func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 				Valid:  true,
 			},
 		})
-		check(err, true)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Print("repository initialized succesfully")
+	return nil
 }

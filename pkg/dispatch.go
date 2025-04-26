@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"oma/internal"
 	"oma/internal/storage"
@@ -40,13 +41,23 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		log.Fatalf("error while parsing the flags: %v", err)
 	}
 
+	fmt.Printf("cmd: %v\n", cmd)
+	fmt.Printf("flags: %+v\n", flags)
+
 	switch cmd {
 	case internal.Init:
-		GitInit(ctx, &repoContainer, &fileIngredients)
+
+		if err := GitInit(ctx, &repoContainer, &fileIngredients); err != nil {
+			log.Fatalf("error while initialising repository: %s", err)
+		}
 	case internal.Commit:
-		GitCommit(ctx, &repoContainer, &fileIngredients)
+		if err := GitCommit(ctx, &repoContainer, &fileIngredients); err != nil {
+			log.Fatalf("error while committing your changes: %s", err)
+		}
 	case internal.Diff:
-		GitDiff(ctx, &repoContainer, &fileIngredients)
+		if err := GitDiff(ctx, &repoContainer, &fileIngredients); err != nil {
+			log.Fatalf("diff could not be displayed: %s", err)
+		}
 	}
 
 }
