@@ -2,7 +2,6 @@ package internal
 
 import (
 	"errors"
-	"os"
 	"slices"
 	"strings"
 )
@@ -33,12 +32,11 @@ type CLIArgs interface {
 	GetFlags(flags *[]Flag) error
 }
 
-func parse() Parsed {
-	asd := os.Args[1:]
+func parse(args []string) Parsed {
 	var foundFlags []Flag
-	var args []Command
+	var commands []Command
 
-	for _, arg := range asd {
+	for _, arg := range args {
 		if strings.HasPrefix(arg, "--") && strings.Contains(arg, "=") {
 			temp := strings.Split(arg, "=")
 			keyPart := temp[0]
@@ -50,12 +48,12 @@ func parse() Parsed {
 				value: valuePart,
 			})
 		} else if slices.Contains(CommandArr, Command(arg)) {
-			args = append(args, Command(arg))
+			commands = append(commands, Command(arg))
 		}
 	}
 
 	return Parsed{
-		commands: args,
+		commands: commands,
 		flags:    foundFlags,
 	}
 }
@@ -66,7 +64,7 @@ type CLIArgsParser struct {
 }
 
 func NewCLIArgsParser(args []string) *CLIArgsParser {
-	parsed := parse()
+	parsed := parse(args)
 
 	return &CLIArgsParser{
 		args:   args,
@@ -74,33 +72,33 @@ func NewCLIArgsParser(args []string) *CLIArgsParser {
 	}
 }
 
-func (self *CLIArgsParser) Validate() error {
-	if len(self.parsed.commands) > 1 {
+func (parser *CLIArgsParser) Validate() error {
+	if len(parser.parsed.commands) > 1 {
 		return errors.New("can not process more than one argument at a time")
 	}
 
 	return nil
 }
 
-func (self *CLIArgsParser) GetCommand(command *Command) error {
-	err := self.Validate()
+func (parser *CLIArgsParser) GetCommand(command *Command) error {
+	err := parser.Validate()
 
 	if err != nil {
 		return err
 	}
 
-	*command = self.parsed.commands[0]
+	*command = parser.parsed.commands[0]
 
 	return nil
 }
 
-func (self *CLIArgsParser) GetFlags(flags *[]Flag) error {
-	err := self.Validate()
+func (parser *CLIArgsParser) GetFlags(flags *[]Flag) error {
+	err := parser.Validate()
 
 	if err != nil {
 		return err
 	}
 
-	*flags = self.parsed.flags
+	*flags = parser.parsed.flags
 	return nil
 }
