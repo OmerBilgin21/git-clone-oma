@@ -9,13 +9,6 @@ var Red = "\033[31m"
 var Green = "\033[32m"
 var Reset = "\033[0m"
 
-func debug(o, n []string) {
-	oj, nj := strings.Join(o, ""), strings.Join(n, "")
-	oa, na := strings.Split(oj, "\n"), strings.Split(nj, "\n")
-	fmt.Printf("len(oa): %v\n", len(oa))
-	fmt.Printf("len(na): %v\n", len(na))
-}
-
 func ColourTheDiffs(
 	additions []Coordinate,
 	deletions []Coordinate,
@@ -27,7 +20,6 @@ func ColourTheDiffs(
 	fmt.Printf("start new: %v\n", len(n))
 	oldArr, newArr := strings.Split(oldStr, ""), strings.Split(newStr, "")
 
-	debug(oldArr, newArr)
 	for _, addition := range additions {
 		xPos := addition.StartX
 		val := newArr[xPos]
@@ -39,7 +31,6 @@ func ColourTheDiffs(
 			newArr[xPos] = Green + val + Reset
 		}
 	}
-	debug(oldArr, newArr)
 
 	for _, deletion := range deletions {
 		yPos := deletion.StartY
