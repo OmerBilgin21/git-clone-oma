@@ -12,9 +12,10 @@ const (
 	Commit Command = "commit"
 	Init   Command = "init"
 	Diff   Command = "diff"
+	Revert Command = "revert"
 )
 
-var CommandArr []Command = []Command{Commit, Init, Diff}
+var CommandArr []Command = []Command{Commit, Init, Diff, Revert}
 
 type Flag struct {
 	key   string
@@ -73,8 +74,22 @@ func NewCLIArgsParser(args []string) *CLIArgsParser {
 }
 
 func (parser *CLIArgsParser) Validate() error {
-	if len(parser.parsed.commands) > 1 {
-		return fmt.Errorf("can not process more than one argument at a time")
+	if len(parser.parsed.commands) != 1 {
+		return fmt.Errorf("unexpected amount of commands")
+	}
+
+	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) < 1 {
+		found := false
+		for _, flag := range parser.parsed.flags {
+			if flag.key == "back" {
+				found = true
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("revert command needs a --back=X flag")
+
+		}
 	}
 
 	return nil
