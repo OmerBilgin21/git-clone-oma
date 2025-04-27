@@ -21,8 +21,14 @@ diff:
 commit:
 	${RUN_CMD} commit --message="yo wassup man"
 
+revert:
+	${RUN_CMD} commit --back=3
+
 plain:
 	${RUN_CMD}
+
+test:
+	go test ./...
 
 build: $(BIN_DIR)/$(APP_NAME)-linux \
        $(BIN_DIR)/$(APP_NAME)-macos-arm64 \
