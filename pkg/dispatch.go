@@ -59,6 +59,10 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		if err := GitDiff(ctx, &repoContainer, &fileIngredients); err != nil {
 			log.Fatalf("diff could not be displayed: %s", err)
 		}
+	case internal.Revert:
+		if err := GitRevert(ctx, &repoContainer, &fileIngredients); err != nil {
+			log.Fatalf("error while reverting :%v", err)
+		}
 	}
 
 }
