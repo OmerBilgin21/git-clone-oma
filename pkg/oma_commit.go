@@ -47,8 +47,8 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
 					StartX:    addition.StartX,
 					StartY:    addition.StartY,
-					EndX:      addition.EndX,
-					EndY:      addition.EndY,
+					EndX:      addition.DestX,
+					EndY:      addition.DestY,
 					ActionKey: storage.AdditionKey,
 					VersionId: newVersion.ID,
 				})
@@ -64,8 +64,8 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
 					StartX:    deletion.StartX,
 					StartY:    deletion.StartY,
-					EndX:      deletion.EndX,
-					EndY:      deletion.EndY,
+					EndX:      deletion.DestX,
+					EndY:      deletion.DestY,
 					ActionKey: storage.DeletionKey,
 					VersionId: newVersion.ID,
 				})
