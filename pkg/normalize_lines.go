@@ -21,7 +21,7 @@ func strLen(str string) int {
 	return runewidth.StringWidth(stripANSI(str))
 }
 
-func consolidateShortLine(line string, width int) string {
+func consolidateShortLine(line string, Width int) string {
 	hasNewL := strings.Contains(line, "\n")
 	text := strings.TrimSuffix(line, "\n")
 
@@ -30,11 +30,11 @@ func consolidateShortLine(line string, width int) string {
 
 	visible := strLen(text)
 
-	if visible == width || visible > width {
+	if visible == Width || visible > Width {
 		return line
 	}
 
-	padding := strings.Repeat(" ", width-visible)
+	padding := strings.Repeat(" ", Width-visible)
 	text = text + padding
 
 	if hasNewL {
@@ -44,7 +44,8 @@ func consolidateShortLine(line string, width int) string {
 	return text
 }
 
-func normalizeLines(oldText, newText string, width int) (string, string, error) {
+func onInitial(oldText, newText string) {
+
 	oldText = strings.ReplaceAll(oldText, "\r", "")
 	newText = strings.ReplaceAll(newText, "\r", "")
 
@@ -55,54 +56,118 @@ func normalizeLines(oldText, newText string, width int) (string, string, error) 
 
 	// make them 1:1 matches for lines by appending the shorter one with empty strings
 	for len(oldLines) < maxLines {
-		oldLines = append(oldLines, consolidateShortLine("", width))
+		oldLines = append(oldLines, consolidateShortLine("", Width))
 	}
 	for len(newLines) < maxLines {
-		newLines = append(newLines, consolidateShortLine("", width))
+		newLines = append(newLines, consolidateShortLine("", Width))
+	}
+}
+
+// TODO: new recursive normalizer
+func newTrial(oldArr, newArr []string, idx int, err error) ([]string, []string, int, error, bool) {
+	if err != nil || (idx > len(newArr) && idx > len(oldArr)) {
+		return oldArr, newArr, idx, err, true
 	}
 
-	for i := 0; i < maxLines; {
+	if idx == 0 {
+		onInitial(strings.Join(oldArr, "\n"), strings.Join(newArr, "\n"))
+	}
+
+	if idx < len(oldArr) {
+		line := oldArr[idx]
+		head := line[:Width]
+		tail := line[Width:]
+		head = consolidateShortLine(head, Width)
+		tail = consolidateShortLine(tail, Width)
+
+		// *side = slices.Delete(*side, i, i+1)
+		// *side = slices.Insert(*side, i, head, tail)
+		//
+		// // preserve the overall string length after splitting
+		// if side == &oldLines {
+		// 	newLines = slices.Insert(newLines, i, consolidateShortLine("", Width))
+		// } else if side == &newLines {
+		// 	oldLines = slices.Insert(oldLines, i, consolidateShortLine("", Width))
+		// } else {
+		// 	return "", "", fmt.Errorf("string length consolidation failed")
+		// }
+
+		if strLen(head) <= Width && strLen(tail) <= Width {
+			oldArr = slices.Delete(oldArr, idx, idx+1)
+			oldArr = slices.Insert(oldArr, idx, head, tail)
+			idx++
+			newOld, newNew, index, err, shouldReturn := newTrial(oldArr, newArr, idx, err)
+			if shouldReturn {
+				return newOld, newNew, index, err, true
+			}
+		}
+
+	}
+
+	return oldArr, newArr, idx, err, false
+}
+
+func normalizeLines(oldText, newText string) (string, string, error) {
+	oldText = strings.ReplaceAll(oldText, "\r", "")
+	newText = strings.ReplaceAll(newText, "\r", "")
+
+	oldLines := strings.Split(oldText, "\n")
+	newLines := strings.Split(newText, "\n")
+
+	maxLines := max(len(oldLines), len(newLines))
+
+	// make them 1:1 matches for lines by appending the shorter one with empty strings
+	for len(oldLines) < maxLines {
+		oldLines = append(oldLines, consolidateShortLine("", Width))
+	}
+	for len(newLines) < maxLines {
+		newLines = append(newLines, consolidateShortLine("", Width))
+	}
+
+	newMaxLines := max(len(oldLines), len(newLines))
+
+	for i := 0; i < newMaxLines; {
 		var (
 			side *[]string
 			line string
 		)
 
-		if strLen(oldLines[i]) > width {
+		if strLen(oldLines[i]) > Width {
 			side = &oldLines
 			line = oldLines[i]
-		} else if strLen(newLines[i]) > width {
+		} else if strLen(newLines[i]) > Width {
 			side = &newLines
 			line = newLines[i]
 		} else {
-			newLines[i] = consolidateShortLine(newLines[i], width)
-			oldLines[i] = consolidateShortLine(oldLines[i], width)
+			newLines[i] = consolidateShortLine(newLines[i], Width)
+			oldLines[i] = consolidateShortLine(oldLines[i], Width)
 
 			i++
 			continue
 		}
 
-		head := line[:width]
-		tail := line[width:]
-		head = consolidateShortLine(head, width)
-		tail = consolidateShortLine(tail, width)
+		head := line[:Width]
+		tail := line[Width:]
+		head = consolidateShortLine(head, Width)
+		tail = consolidateShortLine(tail, Width)
 
 		*side = slices.Delete(*side, i, i+1)
 		*side = slices.Insert(*side, i, head, tail)
 
 		// preserve the overall string length after splitting
 		if side == &oldLines {
-			newLines = slices.Insert(newLines, i, consolidateShortLine("", width))
+			newLines = slices.Insert(newLines, i, consolidateShortLine("", Width))
 		} else if side == &newLines {
-			oldLines = slices.Insert(oldLines, i, consolidateShortLine("", width))
+			oldLines = slices.Insert(oldLines, i, consolidateShortLine("", Width))
 		} else {
 			return "", "", fmt.Errorf("string length consolidation failed")
 		}
 
 		if i+1 < len(newLines) && i+1 < len(oldLines) {
-			oldLines[i] = consolidateShortLine(oldLines[i], width)
-			oldLines[i+1] = consolidateShortLine(oldLines[i+1], width)
-			newLines[i] = consolidateShortLine(newLines[i], width)
-			newLines[i+1] = consolidateShortLine(newLines[i+1], width)
+			oldLines[i] = consolidateShortLine(oldLines[i], Width)
+			oldLines[i+1] = consolidateShortLine(oldLines[i+1], Width)
+			newLines[i] = consolidateShortLine(newLines[i], Width)
+			newLines[i+1] = consolidateShortLine(newLines[i+1], Width)
 		}
 	}
 
