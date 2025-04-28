@@ -32,7 +32,11 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				},
 			})
 		} else {
-			additions, deletions := GetDiff(newres.CachedText.String, ingredient.content)
+			additions, deletions, moves, _, _, err := GetDiff(newres.CachedText.String, ingredient.content)
+
+			if err != nil {
+				return err
+			}
 
 			newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 				RepositoryId: newres.ID,
@@ -45,10 +49,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			for i := range additions {
 				addition := additions[i]
 				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-					StartX:    addition.StartX,
-					StartY:    addition.StartY,
-					EndX:      addition.DestX,
-					EndY:      addition.DestY,
+					Dest:      addition,
 					ActionKey: storage.AdditionKey,
 					VersionId: newVersion.ID,
 				})
@@ -62,10 +63,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			for i := range deletions {
 				deletion := deletions[i]
 				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-					StartX:    deletion.StartX,
-					StartY:    deletion.StartY,
-					EndX:      deletion.DestX,
-					EndY:      deletion.DestY,
+					Dest:      deletion,
 					ActionKey: storage.DeletionKey,
 					VersionId: newVersion.ID,
 				})
@@ -74,6 +72,21 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 					return err
 				}
 
+			}
+
+			for i := range moves {
+				move := moves[i]
+
+				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+					Start:     sql.Null[int]{V: move.from, Valid: true},
+					Dest:      move.to,
+					ActionKey: storage.DeletionKey,
+					VersionId: newVersion.ID,
+				})
+
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
