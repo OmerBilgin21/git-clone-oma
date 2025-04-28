@@ -1,47 +1,34 @@
 package pkg
 
 import (
-	"fmt"
 	"strings"
 )
 
 var Red = "\033[31m"
 var Green = "\033[32m"
 var Reset = "\033[0m"
+var Orange = "\033[33m"
 
 func ColourTheDiffs(
-	additions []Coordinate,
-	deletions []Coordinate,
+	additions []int,
+	deletions []int,
+	moves []Move,
 	oldStr string,
 	newStr string,
 ) (string, string) {
-	o, n := strings.Split(oldStr, "\n"), strings.Split(newStr, "\n")
-	fmt.Printf("start old: %v\n", len(o))
-	fmt.Printf("start new: %v\n", len(n))
-	oldArr, newArr := strings.Split(oldStr, ""), strings.Split(newStr, "")
+	oldArr, newArr := strings.Split(oldStr, "\n"), strings.Split(newStr, "\n")
 
-	for _, addition := range additions {
-		xPos := addition.StartX
-		val := newArr[xPos]
-		if xPos < len(newArr) {
-			if val == "\n" && strLen(val) == 1 {
-				newArr[xPos] = Green + "+\n" + Reset
-				continue
-			}
-			newArr[xPos] = Green + val + Reset
-		}
+	for _, x := range additions {
+		newArr[x] = Green + newArr[x] + Reset
 	}
 
-	for _, deletion := range deletions {
-		yPos := deletion.StartY
-		val := oldArr[yPos]
-		if yPos < len(oldArr) && strLen(val) == 1 {
-			if val == "\n" {
-				oldArr[yPos] = Red + "-\n" + Reset
-			}
-			oldArr[yPos] = Red + val + Reset
-		}
+	for _, y := range deletions {
+		oldArr[y] = Red + oldArr[y] + Reset
 	}
 
-	return strings.Join(oldArr, ""), strings.Join(newArr, "")
+	for _, m := range moves {
+		newArr[m.to] = Orange + newArr[m.to] + Reset
+	}
+
+	return strings.Join(oldArr, "\n"), strings.Join(newArr, "\n")
 }

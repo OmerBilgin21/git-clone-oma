@@ -9,6 +9,8 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+const Width = 50
+
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 func stripANSI(input string) string {
