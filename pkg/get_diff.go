@@ -4,64 +4,49 @@ import (
 	"strings"
 )
 
-type Coordinate struct {
-	StartX int
-	StartY int
-	EndX   int
-	EndY   int
+type Move struct {
+	from int
+	to   int
 }
 
-func GetDiff(oldStr string, newStr string) ([]Coordinate, []Coordinate) {
-	oldArr, newArr := strings.Split(oldStr, ""), strings.Split(newStr, "")
-	var additions []Coordinate
-	var deletions []Coordinate
+func GetDiff(oldStr string, newStr string) ([]int, []int, []Move, string, string, error) {
+	normalizedOld, normalizedNew, err := normalizeLines(oldStr, newStr, Width)
 
-	x, y := 0, 0
-	for x < len(newArr) && y < len(oldArr) {
+	if err != nil {
+		return []int{}, []int{}, []Move{}, "", "", err
+	}
 
-		// just slide
-		if newArr[x] == oldArr[y] {
-			for x < len(newArr) && y < len(oldArr) && newArr[x] == oldArr[y] {
-				x++
-				y++
-			}
+	oldArr, newArr := strings.Split(normalizedOld, "\n"), strings.Split(normalizedNew, "\n")
+	var additions []int
+	var deletions []int
+	var moves []Move
 
-		} else if x+1 < len(newArr) && newArr[x+1] == oldArr[y] {
-			additions = append(additions, Coordinate{
-				StartX: x,
-				StartY: y,
-				EndX:   x + 1,
-				EndY:   y,
-			})
-			x++
+	oldMap := make(map[string]int)
+	newMap := make(map[string]int)
 
-		} else if y+1 < len(oldArr) && oldArr[y+1] == newArr[x] {
-			deletions = append(deletions, Coordinate{
-				StartX: x,
-				StartY: y,
-				EndX:   x,
-				EndY:   y + 1,
-			})
-			y++
+	for i, l := range oldArr {
+		oldMap[l] = i
+	}
 
+	for i, l := range newArr {
+		newMap[l] = i
+	}
+
+	for x, n := range newArr {
+		if y, exists := oldMap[n]; exists && (oldMap[n] != newMap[n]) {
+			moves = append(moves, Move{from: y, to: x})
+		} else if _, exists := oldMap[n]; exists && (oldMap[n] == newMap[n]) {
+			continue
 		} else {
-			additions = append(additions, Coordinate{
-				StartX: x,
-				StartY: y,
-				EndX:   x + 1,
-				EndY:   y,
-			})
-
-			deletions = append(deletions, Coordinate{
-				StartX: x,
-				StartY: y,
-				EndX:   x,
-				EndY:   y + 1,
-			})
-			x++
-			y++
+			additions = append(additions, x)
 		}
 	}
 
-	return additions, deletions
+	for y, o := range oldArr {
+		if _, exists := newMap[o]; !exists {
+			deletions = append(deletions, y)
+		}
+	}
+
+	return additions, deletions, moves, normalizedOld, normalizedNew, nil
 }
