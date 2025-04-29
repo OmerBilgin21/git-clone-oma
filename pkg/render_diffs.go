@@ -23,7 +23,7 @@ func renderSideBySideDiff(oldColoured, newColoured, oldName, newName string) {
 	oldLines, newLines := strings.Split(oldColoured, "\n"), strings.Split(newColoured, "\n")
 	maxLines := max(len(oldLines), len(newLines))
 
-	fmt.Printf("\n%s%s%s\n", consolidateShortLine(filepath.Base(oldName), Width), separator, filepath.Base(newName))
+	fmt.Printf("\n%s%s%s\n", consolidateShortLine(filepath.Base(oldName)), separator, filepath.Base(newName))
 
 	columnSeparator := strings.Repeat("-", Width*2)
 	fmt.Printf(columnSeparator + "\n")
