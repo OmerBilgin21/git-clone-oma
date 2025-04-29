@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -21,7 +20,7 @@ func strLen(str string) int {
 	return runewidth.StringWidth(stripANSI(str))
 }
 
-func consolidateShortLine(line string, Width int) string {
+func consolidateShortLine(line string) string {
 	hasNewL := strings.Contains(line, "\n")
 	text := strings.TrimSuffix(line, "\n")
 
@@ -44,8 +43,7 @@ func consolidateShortLine(line string, Width int) string {
 	return text
 }
 
-func onInitial(oldText, newText string) {
-
+func postEqualizerCleanUp(oldText, newText string) (string, string) {
 	oldText = strings.ReplaceAll(oldText, "\r", "")
 	newText = strings.ReplaceAll(newText, "\r", "")
 
@@ -56,120 +54,44 @@ func onInitial(oldText, newText string) {
 
 	// make them 1:1 matches for lines by appending the shorter one with empty strings
 	for len(oldLines) < maxLines {
-		oldLines = append(oldLines, consolidateShortLine("", Width))
+		oldLines = append(oldLines, consolidateShortLine(""))
 	}
 	for len(newLines) < maxLines {
-		newLines = append(newLines, consolidateShortLine("", Width))
+		newLines = append(newLines, consolidateShortLine(""))
 	}
+
+	return strings.Join(oldLines, "\n"), strings.Join(newLines, "\n")
 }
 
-// TODO: new recursive normalizer
-func newTrial(oldArr, newArr []string, idx int, err error) ([]string, []string, int, error, bool) {
-	if err != nil || (idx > len(newArr) && idx > len(oldArr)) {
-		return oldArr, newArr, idx, err, true
-	}
+func recursiveEqualizer(arr *[]string) bool {
+	for i, line := range *arr {
+		if strLen(line) > Width {
 
-	if idx == 0 {
-		onInitial(strings.Join(oldArr, "\n"), strings.Join(newArr, "\n"))
-	}
+			head := line[:Width]
+			tail := line[Width:]
 
-	if idx < len(oldArr) {
-		line := oldArr[idx]
-		head := line[:Width]
-		tail := line[Width:]
-		head = consolidateShortLine(head, Width)
-		tail = consolidateShortLine(tail, Width)
+			head = consolidateShortLine(head)
+			tail = consolidateShortLine(tail)
 
-		// *side = slices.Delete(*side, i, i+1)
-		// *side = slices.Insert(*side, i, head, tail)
-		//
-		// // preserve the overall string length after splitting
-		// if side == &oldLines {
-		// 	newLines = slices.Insert(newLines, i, consolidateShortLine("", Width))
-		// } else if side == &newLines {
-		// 	oldLines = slices.Insert(oldLines, i, consolidateShortLine("", Width))
-		// } else {
-		// 	return "", "", fmt.Errorf("string length consolidation failed")
-		// }
-
-		if strLen(head) <= Width && strLen(tail) <= Width {
-			oldArr = slices.Delete(oldArr, idx, idx+1)
-			oldArr = slices.Insert(oldArr, idx, head, tail)
-			idx++
-			newOld, newNew, index, err, shouldReturn := newTrial(oldArr, newArr, idx, err)
-			if shouldReturn {
-				return newOld, newNew, index, err, true
+			*arr = slices.Delete(*arr, i, i+1)
+			*arr = slices.Insert(*arr, i, head, tail)
+			if res := recursiveEqualizer(arr); res {
+				return true
 			}
+		} else {
+			newLine := consolidateShortLine(line)
+			*arr = slices.Delete(*arr, i, i+1)
+			*arr = slices.Insert(*arr, i, newLine)
 		}
-
 	}
 
-	return oldArr, newArr, idx, err, false
+	return true
 }
 
-func normalizeLines(oldText, newText string) (string, string, error) {
-	oldText = strings.ReplaceAll(oldText, "\r", "")
-	newText = strings.ReplaceAll(newText, "\r", "")
+func normalizeLines(oldText, newText string) (string, string) {
+	oldArr, newArr := strings.Split(oldText, "\n"), strings.Split(newText, "\n")
+	recursiveEqualizer(&oldArr)
+	recursiveEqualizer(&newArr)
 
-	oldLines := strings.Split(oldText, "\n")
-	newLines := strings.Split(newText, "\n")
-
-	maxLines := max(len(oldLines), len(newLines))
-
-	// make them 1:1 matches for lines by appending the shorter one with empty strings
-	for len(oldLines) < maxLines {
-		oldLines = append(oldLines, consolidateShortLine("", Width))
-	}
-	for len(newLines) < maxLines {
-		newLines = append(newLines, consolidateShortLine("", Width))
-	}
-
-	newMaxLines := max(len(oldLines), len(newLines))
-
-	for i := 0; i < newMaxLines; {
-		var (
-			side *[]string
-			line string
-		)
-
-		if strLen(oldLines[i]) > Width {
-			side = &oldLines
-			line = oldLines[i]
-		} else if strLen(newLines[i]) > Width {
-			side = &newLines
-			line = newLines[i]
-		} else {
-			newLines[i] = consolidateShortLine(newLines[i], Width)
-			oldLines[i] = consolidateShortLine(oldLines[i], Width)
-
-			i++
-			continue
-		}
-
-		head := line[:Width]
-		tail := line[Width:]
-		head = consolidateShortLine(head, Width)
-		tail = consolidateShortLine(tail, Width)
-
-		*side = slices.Delete(*side, i, i+1)
-		*side = slices.Insert(*side, i, head, tail)
-
-		// preserve the overall string length after splitting
-		if side == &oldLines {
-			newLines = slices.Insert(newLines, i, consolidateShortLine("", Width))
-		} else if side == &newLines {
-			oldLines = slices.Insert(oldLines, i, consolidateShortLine("", Width))
-		} else {
-			return "", "", fmt.Errorf("string length consolidation failed")
-		}
-
-		if i+1 < len(newLines) && i+1 < len(oldLines) {
-			oldLines[i] = consolidateShortLine(oldLines[i], Width)
-			oldLines[i+1] = consolidateShortLine(oldLines[i+1], Width)
-			newLines[i] = consolidateShortLine(newLines[i], Width)
-			newLines[i+1] = consolidateShortLine(newLines[i+1], Width)
-		}
-	}
-
-	return strings.Join(oldLines, "\n"), strings.Join(newLines, "\n"), nil
+	return postEqualizerCleanUp(strings.Join(oldArr, "\n"), strings.Join(newArr, "\n"))
 }
