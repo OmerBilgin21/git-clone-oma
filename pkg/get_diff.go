@@ -10,11 +10,7 @@ type Move struct {
 }
 
 func GetDiff(oldStr string, newStr string) ([]int, []int, []Move, string, string, error) {
-	normalizedOld, normalizedNew, err := normalizeLines(oldStr, newStr)
-
-	if err != nil {
-		return []int{}, []int{}, []Move{}, "", "", err
-	}
+	normalizedOld, normalizedNew := normalizeLines(oldStr, newStr)
 
 	oldArr, newArr := strings.Split(normalizedOld, "\n"), strings.Split(normalizedNew, "\n")
 	var additions []int
