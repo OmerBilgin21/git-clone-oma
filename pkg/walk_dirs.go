@@ -14,6 +14,9 @@ type FileIngredients struct {
 	content  string
 }
 
+// at the time I implemented this I didn't know
+// path/filepath.WalkDir existed :D
+// but hey, it works, so no need to change it
 func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps []string, ignoreList []string) bool {
 	someList, err := os.ReadDir(curr)
 	check(err, true)
