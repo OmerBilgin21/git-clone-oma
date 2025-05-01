@@ -19,7 +19,7 @@ func versionActionsToMap(data *VersionActions) map[string]any {
 
 type VersionActionsRepository interface {
 	Create(ctx context.Context, data *VersionActions) (*VersionActions, error)
-	GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error)
+	GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error)
 }
 
 type VersionActionsRepositoryImpl struct {
@@ -43,7 +43,7 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 	return createdRepo, err
 }
 
-func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error) {
+func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
 	query, _, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
 		"version_id": versionId,
 	}).ToSql()
@@ -52,12 +52,12 @@ func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.C
 		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%v", err)
 	}
 
-	foundVersionActions := &[]VersionActions{}
+	foundVersionActions := []VersionActions{}
 
 	err = versionActions.db.SelectContext(ctx, foundVersionActions, query)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while finding version actions for version:\n%v\nerror:\n%v", versionId, err)
+		return nil, fmt.Errorf("error while finding version actions for version: %v\nerror:\n%v", versionId, err)
 	}
 
 	return foundVersionActions, err
