@@ -10,7 +10,7 @@ import (
 type VersionRepository interface {
 	Create(ctx context.Context, data *Versions) (*Versions, error)
 	Get(ctx context.Context, id int) (*Versions, error)
-	GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, *[]Versions, error)
+	GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, error)
 }
 
 type VersionRepositoryImpl struct {
@@ -22,10 +22,31 @@ func NewVersionRepository(db *sqlx.DB) *VersionRepositoryImpl {
 }
 
 func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Versions, error) {
-	query, args, err := sq.Insert("versions").Columns("repository_id").Values(data.RepositoryId).Suffix("returning *").ToSql()
+	nextIdQuery, nextIdArgs, err := sq.Select("max(version_id)").From("versions").Where(squirrel.Eq{
+		"repository_id": data.RepositoryId,
+	}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the create versions query, %v", err)
+		return nil, fmt.Errorf("error while generating the nextIdQuery for repository:\n%v\nerror:\n%v", data.RepositoryId, err)
+	}
+
+	var nextId int
+	err = versions.db.GetContext(ctx, &nextId, nextIdQuery, nextIdArgs...)
+
+	// means first version for a repo
+	if err != nil {
+		nextId = 1
+	} else {
+		nextId++
+	}
+
+	query, args, err := sq.Insert("versions").SetMap(map[string]any{
+		"version_id":    nextId,
+		"repository_id": data.RepositoryId,
+	}).Suffix("returning *").ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while generating the create versions query:\n%v", err)
 	}
 
 	createdRepo := &Versions{}
@@ -40,7 +61,7 @@ func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versio
 	}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the create versions query: %v", err)
+		return nil, fmt.Errorf("error while generating the create versions query:\n%v", err)
 	}
 
 	foundRepo := &Versions{}
@@ -49,26 +70,33 @@ func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versio
 	return foundRepo, err
 }
 
-func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, *[]Versions, error) {
-	additionQuery, additionArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
+func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, error) {
+	findLatestQuery, findLatestArgs, err := sq.Select("max(version_id)").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
-		"action_key":    AdditionKey,
-	}).Limit(1).ToSql()
-
-	deletionQuery, deletionArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
-		"repository_id": repoId,
-		"action_key":    DeletionKey,
-	}).Limit(1).ToSql()
+	}).ToSql()
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("error while building GetLatestByRepositoryId query: %s\n", err)
+		return nil, fmt.Errorf("error while building the find latest version_id query for repository:\n%v\nerror:\n%v", repoId, err)
 	}
 
-	additions := []Versions{}
-	err = versions.db.GetContext(ctx, &additions, additionQuery, additionArgs...)
+	var latestVersionId int
+	err = versions.db.GetContext(ctx, &latestVersionId, findLatestQuery, findLatestArgs...)
 
-	deletions := []Versions{}
-	err = versions.db.GetContext(ctx, &deletions, deletionQuery, deletionArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("error while finding the latest version id for repository:\n%v\nerror:\n%v", repoId, err)
+	}
 
-	return nil, nil, nil
+	versionsQuery, versionsArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
+		"repository_id": repoId,
+		"version_id":    latestVersionId,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while building GetLatestByRepositoryId query:\n%v", err)
+	}
+
+	foundVersions := []Versions{}
+	err = versions.db.SelectContext(ctx, &foundVersions, versionsQuery, versionsArgs...)
+
+	return &foundVersions, err
 }
