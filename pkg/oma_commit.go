@@ -9,19 +9,25 @@ import (
 )
 
 func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
+	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+
+	if err != nil {
+		return err
+	}
+
 	for _, ingredient := range *fileIngredients {
-		newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
+		foundRepo, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
-		})
+		}, repoId)
 
 		if err != nil {
 			return err
 		}
 
-		if newres.ID == 0 {
+		if foundRepo.ID == 0 || foundRepo == nil {
 			fmt.Printf("No previous version of the file, creating cache...")
-			repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
+			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 				FileName: sql.NullString{
 					Valid:  true,
 					String: ingredient.fileName,
@@ -30,16 +36,21 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 					Valid:  true,
 					String: ingredient.content,
 				},
+				OmaRepoId: repoId,
 			})
+
+			if err != nil {
+				return fmt.Errorf("error while creating a new file cache:\n%v", err)
+			}
 		} else {
-			additions, deletions, moves, _, _, err := GetDiff(newres.CachedText.String, ingredient.content)
+			additions, deletions, moves, _, _, err := GetDiff(foundRepo.CachedText.String, ingredient.content)
 
 			if err != nil {
 				return err
 			}
 
 			newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
-				RepositoryId: newres.ID,
+				RepositoryId: foundRepo.ID,
 			})
 
 			if err != nil {
@@ -80,7 +91,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
 					Start:     sql.Null[int]{V: move.from, Valid: true},
 					Dest:      move.to,
-					ActionKey: storage.DeletionKey,
+					ActionKey: storage.MoveKey,
 					VersionId: newVersion.ID,
 				})
 
