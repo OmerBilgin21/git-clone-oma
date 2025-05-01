@@ -21,7 +21,8 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 	repoContainer := storage.RepositoryContainer{
 		OmaRepository:            storage.NewOmaRepository(dbIns),
 		VersionsRepository:       storage.NewVersionRepository(dbIns),
-		VersionActionsRepository: storage.NewVersionActionsRepositoryImpl(dbIns),
+		VersionActionsRepository: storage.NewVersionActionsRepository(dbIns),
+		FileIORepository:         storage.NewFileIO(),
 	}
 
 	fileIngredients := walkDirsAndReadFiles()
@@ -32,13 +33,13 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 	err := parseArgs.GetCommand(&cmd)
 
 	if err != nil {
-		log.Fatalf("error while parsing the commands: %v", err)
+		log.Fatalf("error while parsing the commands:\n%v", err)
 	}
 
 	err = parseArgs.GetFlags(&flags)
 
 	if err != nil {
-		log.Fatalf("error while parsing the flags: %v", err)
+		log.Fatalf("error while parsing the flags:\n%v", err)
 	}
 
 	fmt.Printf("cmd: %v\n", cmd)
@@ -47,21 +48,21 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 	switch cmd {
 	case internal.Init:
 		if err := GitInit(ctx, &repoContainer, &fileIngredients); err != nil {
-			log.Fatalf("error while initialising repository: %s", err)
+			log.Fatalf("error while initialising repository:\n%v", err)
 		}
 
 	case internal.Commit:
 		if err := GitCommit(ctx, &repoContainer, &fileIngredients); err != nil {
-			log.Fatalf("error while committing your changes: %s", err)
+			log.Fatalf("error while committing your changes:\n%v", err)
 		}
 
 	case internal.Diff:
 		if err := GitDiff(ctx, &repoContainer, &fileIngredients); err != nil {
-			log.Fatalf("diff could not be displayed: %s", err)
+			log.Fatalf("diff could not be displayed:\n%s", err)
 		}
 	case internal.Revert:
 		if err := GitRevert(ctx, &repoContainer, &fileIngredients); err != nil {
-			log.Fatalf("error while reverting :%v", err)
+			log.Fatalf("error while reverting:\n%v", err)
 		}
 	}
 
