@@ -12,10 +12,11 @@ import (
 )
 
 type OmaRepoRepository interface {
+	GetNextOmaRepoId(ctx context.Context) (int, error)
 	Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error)
 	Get(ctx context.Context, id int) (*OmaRepository, error)
 	GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error)
-	GetLatestByFileName(ctx context.Context, filename sql.NullString) (*OmaRepository, error)
+	GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error)
 	Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -28,31 +29,42 @@ func NewOmaRepository(db *sqlx.DB) *OmaRepositoryImpl {
 	return &OmaRepositoryImpl{db: db}
 }
 
+func (omaRepo *OmaRepositoryImpl) GetNextOmaRepoId(ctx context.Context) (int, error) {
+	nextIdQuery, _, err := sq.Select("max(oma_repo_id)").From("repositories").ToSql()
+	var id int
+
+	if err != nil {
+		return -1, fmt.Errorf("error while getting the next id for oma repository:\n%v", err)
+	}
+
+	err = omaRepo.db.GetContext(ctx, &id, nextIdQuery)
+
+	if err != nil {
+		id = 1
+	} else {
+		id++
+	}
+
+	return id, nil
+}
+
 func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error) {
-	query := `insert into repositories (cached_text, filename) 
-	values ($1, $2) 
-	returning *`
-
-	var cachedText, fileName any
-
-	if data.CachedText.Valid {
-		cachedText = data.CachedText.String
-	} else {
-		cachedText = nil
+	if !data.FileName.Valid {
+		return nil, fmt.Errorf("illogical attempt of creating a repository")
 	}
 
-	if data.FileName.Valid {
-		fileName = data.FileName.String
-	} else {
-		fileName = nil
-	}
+	query, args, err := sq.Insert("repositories").SetMap(map[string]any{
+		"filename":    data.FileName.String,
+		"cached_text": data.CachedText.String,
+		"oma_repo_id": data.OmaRepoId,
+	}).Suffix("returning *").ToSql()
 
 	createdRepo := &OmaRepository{}
 
-	err := omaRepo.db.GetContext(ctx, createdRepo, query, cachedText, fileName)
+	err = omaRepo.db.GetContext(ctx, createdRepo, query, args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while creating an oma repository %v", err)
+		return nil, fmt.Errorf("error while creating an oma repository:\n%v", err)
 	}
 
 	return createdRepo, err
@@ -62,7 +74,7 @@ func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaReposito
 	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while getting: %v", err)
+		return nil, fmt.Errorf("error while getting:\n%v", err)
 	}
 
 	foundRepo := &OmaRepository{}
@@ -72,15 +84,24 @@ func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaReposito
 
 }
 
-func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString) (*OmaRepository, error) {
-	query := "select * from repositories where filename = $1 order by id limit 1"
-
+func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error) {
 	if !filename.Valid {
-		return nil, fmt.Errorf("you can not search for a null file name")
+		return nil, fmt.Errorf("you can not search for a null file name\n")
+	}
+
+	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
+		"filename":    filename.String,
+		"oma_repo_id": omaRepoId,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while generating the GetLatestByFileName query:\n%v", err)
 	}
 
 	foundRepo := []OmaRepository{}
-	err := omaRepo.db.SelectContext(ctx, &foundRepo, query, filename)
+
+	err = omaRepo.db.SelectContext(ctx, &foundRepo, query, args...)
+
 	if err != nil || len(foundRepo) != 1 {
 		return nil, err
 	}
@@ -91,7 +112,7 @@ func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filen
 func (omaRepo *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{"id": ids}).ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("error while getting: %v", err)
+		return nil, fmt.Errorf("error at GetMany:\n%v", err)
 	}
 
 	foundRepos := []OmaRepository{}
@@ -113,8 +134,9 @@ func (omaRepo *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaR
 	qb = qb.Where(squirrel.Eq{"id": strconv.Itoa(id)}).Suffix("returning *")
 
 	query, args, err := qb.ToSql()
+
 	if err != nil {
-		return nil, fmt.Errorf("error while updating: %v\n", err)
+		return nil, fmt.Errorf("error while updating:\n%v", err)
 	}
 
 	updatedRepo := &OmaRepository{}
@@ -126,5 +148,6 @@ func (omaRepo *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaR
 func (omaRepo *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 	query := `update repositories set deleted_at = now() where id = $1`
 	_, err := omaRepo.db.ExecContext(ctx, query, id)
+
 	return err
 }
