@@ -9,7 +9,6 @@ import (
 
 func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]FileIngredients) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
-	fmt.Printf("repoId: %v\n", repoId)
 
 	if err != nil {
 		return err
@@ -34,12 +33,22 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return fmt.Errorf("no versions found for repository: %v\nerror: %v\n", repository.OmaRepoId, err)
 		}
 
-		if len(*versions) > 0 {
-			fmt.Printf("versions: %v\n", versions)
+		fmt.Printf("versions: %v\n", versions)
+
+		versionActions, err := repoContainer.VersionActionsRepository.GetByVersionId(ctx, versions.ID)
+
+		// FIXME: don't return this, skip it.
+		// this means there's no found version action, which is fine.
+		// just skip it
+		if err != nil {
+			return err
 		}
 
-		// versionActions := repoContainer.VersionActionsRepository
+		// TODO: build old versions here
 
+		fmt.Printf("len(versionActions): %v\n", len(versionActions))
+
+		fmt.Printf("yo ended man\n")
 	}
 
 	return nil
