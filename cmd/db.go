@@ -20,7 +20,7 @@ func reset(m *migrate.Migrate, path string, dbUrl string) {
 
 	if version > 0 {
 		if err := m.Drop(); err != nil {
-			log.Print("Yo:", err)
+			log.Fatalf("error while dropping the tables:\n%v", err)
 		}
 
 		log.Print("Dropped everything")
@@ -32,6 +32,15 @@ func reset(m *migrate.Migrate, path string, dbUrl string) {
 		}
 
 		log.Print("schema migrations table initiated again")
+	}
+
+	pathToDir := filepath.Join(".oma")
+	if _, err := os.Stat(pathToDir); err == nil {
+		if err := os.RemoveAll(pathToDir); err != nil {
+			log.Fatalf("error while removing the .oma directory:\n%v", err)
+		}
+
+		log.Printf("oma directory removed")
 	}
 
 	if err := m.Up(); err != nil {
