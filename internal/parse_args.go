@@ -75,7 +75,7 @@ func NewCLIArgsParser(args []string) *CLIArgsParser {
 
 func (parser *CLIArgsParser) Validate() error {
 	if len(parser.parsed.commands) != 1 {
-		return fmt.Errorf("unexpected amount of commands")
+		return fmt.Errorf("unexpected amount of commands\n")
 	}
 
 	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) < 1 {
@@ -87,7 +87,7 @@ func (parser *CLIArgsParser) Validate() error {
 		}
 
 		if !found {
-			return fmt.Errorf("revert command needs a --back=X flag")
+			return fmt.Errorf("revert command needs a --back=X flag\n")
 
 		}
 	}
