@@ -10,7 +10,7 @@ import (
 type VersionRepository interface {
 	Create(ctx context.Context, data *Versions) (*Versions, error)
 	Get(ctx context.Context, id int) (*Versions, error)
-	GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, error)
+	GetLatestByRepositoryId(ctx context.Context, repoId int) (*Versions, error)
 }
 
 type VersionRepositoryImpl struct {
@@ -70,7 +70,7 @@ func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versio
 	return foundRepo, err
 }
 
-func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]Versions, error) {
+func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*Versions, error) {
 	findLatestQuery, findLatestArgs, err := sq.Select("max(version_id)").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
 	}).ToSql()
@@ -98,5 +98,9 @@ func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Conte
 	foundVersions := []Versions{}
 	err = versions.db.SelectContext(ctx, &foundVersions, versionsQuery, versionsArgs...)
 
-	return &foundVersions, err
+	if len(foundVersions) != 1 {
+		return nil, fmt.Errorf("something went very wrong, please create an issue")
+	}
+
+	return &foundVersions[0], err
 }
