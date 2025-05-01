@@ -22,7 +22,7 @@ commit:
 	${RUN_CMD} commit --message="yo wassup man"
 
 revert:
-	${RUN_CMD} commit --back=3
+	${RUN_CMD} revert --back=3
 
 plain:
 	${RUN_CMD}
