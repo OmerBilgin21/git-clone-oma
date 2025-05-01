@@ -7,29 +7,26 @@ import (
 )
 
 func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
+	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+
+	if err != nil {
+		return err
+	}
+
 	for _, ingredient := range *fileIngredients {
-		newres, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
+		foundRepo, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
-		})
+		}, repoId)
 
 		if err != nil {
 			return err
 		}
 
-		if newres.ID == 0 {
-			repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-				FileName: sql.NullString{
-					String: ingredient.fileName,
-					Valid:  true,
-				},
-				CachedText: sql.NullString{
-					Valid:  true,
-					String: ingredient.content,
-				},
-			})
+		if foundRepo.ID == 0 {
+			continue
 		} else {
-			if err := RenderDiffs(newres.CachedText.String, ingredient.content, newres.FileName.String, ingredient.fileName); err != nil {
+			if err := RenderDiffs(foundRepo.CachedText.String, ingredient.content, ingredient.fileName); err != nil {
 				return err
 			}
 		}
