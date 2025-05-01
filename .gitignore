@@ -1,5 +1,7 @@
 bin
 .env
+# oma uses this for local state
+.oma
 # test folders
 asd
 qwe
