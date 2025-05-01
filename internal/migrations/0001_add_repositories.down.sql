@@ -1,2 +1,2 @@
-drop table repositories
+drop table if exists repositories
 
