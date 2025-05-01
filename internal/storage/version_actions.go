@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -18,15 +19,14 @@ func versionActionsToMap(data *VersionActions) map[string]any {
 
 type VersionActionsRepository interface {
 	Create(ctx context.Context, data *VersionActions) (*VersionActions, error)
-	// Get(ctx context.Context, id int) (*VersionActions, error)
-	// GetLatestByRepositoryId(ctx context.Context, repoId int) (*[]VersionActions, *[]VersionActions, error)
+	GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error)
 }
 
 type VersionActionsRepositoryImpl struct {
 	db *sqlx.DB
 }
 
-func NewVersionActionsRepositoryImpl(db *sqlx.DB) *VersionActionsRepositoryImpl {
+func NewVersionActionsRepository(db *sqlx.DB) *VersionActionsRepositoryImpl {
 	return &VersionActionsRepositoryImpl{db: db}
 }
 
@@ -34,11 +34,31 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 	query, args, err := sq.Insert("version_actions").SetMap(versionActionsToMap(data)).Suffix("returning *").ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the create version actions query: %v", err)
+		return nil, fmt.Errorf("error while generating the create version actions query:\n%v", err)
 	}
 
 	createdRepo := &VersionActions{}
 	err = versionActions.db.GetContext(ctx, createdRepo, query, args...)
 
 	return createdRepo, err
+}
+
+func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error) {
+	query, _, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
+		"version_id": versionId,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%v", err)
+	}
+
+	foundVersionActions := &[]VersionActions{}
+
+	err = versionActions.db.SelectContext(ctx, foundVersionActions, query)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while finding version actions for version:\n%v\nerror:\n%v", versionId, err)
+	}
+
+	return foundVersionActions, err
 }
