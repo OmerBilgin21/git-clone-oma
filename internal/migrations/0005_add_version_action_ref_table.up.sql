@@ -6,7 +6,7 @@ CREATE TABLE version_actions (
   deleted_at TIMESTAMP WITHOUT TIME ZONE,
   end_x INTEGER NOT NULL,
   end_y INTEGER NOT NULL,
-  action_key TEXT NOT NULL CHECK (action_key IN ('addition', 'deletion')),
+  action_key TEXT NOT NULL CHECK (action_key IN ('addition', 'deletion', 'move')),
   version_id INTEGER NOT NULL
 );
 
