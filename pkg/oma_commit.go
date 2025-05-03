@@ -21,11 +21,9 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			Valid:  true,
 		}, repoId)
 
-		if err != nil {
-			return err
-		}
-
-		if foundRepo.ID == 0 || foundRepo == nil {
+		if err != nil && foundRepo.ID == 0 {
+			panic(fmt.Errorf("something went very wrong\nlease create an issue on GitHub: https://github.com/OmerBilgin21/git-clone-oma \nerror:\n%w", err))
+		} else if err != nil {
 			fmt.Printf("No previous version of the file, creating cache...")
 			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 				FileName: sql.NullString{
@@ -42,62 +40,69 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			if err != nil {
 				return fmt.Errorf("error while creating a new file cache:\n%v", err)
 			}
-		} else {
-			additions, deletions, moves, _, _, err := GetDiff(foundRepo.CachedText.String, ingredient.content)
 
-			if err != nil {
-				return err
-			}
+			continue
+		}
 
-			newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
-				RepositoryId: foundRepo.ID,
+		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content)
+
+		if diffResult.error != nil {
+			return err
+		}
+
+		if len(diffResult.additions) == 0 && len(diffResult.deletions) == 0 && len(diffResult.moves) == 0 {
+			continue
+		}
+
+		fmt.Printf("changes detected, committing file: %v\n", ingredient.fileName)
+
+		newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
+			RepositoryId: foundRepo.ID,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		for _, addition := range diffResult.additions {
+			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+				Dest:      addition.position,
+				ActionKey: storage.AdditionKey,
+				VersionId: newVersion.ID,
+				Content:   addition.content,
 			})
 
 			if err != nil {
 				return err
 			}
 
-			for i := range additions {
-				addition := additions[i]
-				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-					Dest:      addition,
-					ActionKey: storage.AdditionKey,
-					VersionId: newVersion.ID,
-				})
+		}
 
-				if err != nil {
-					return err
-				}
+		for _, deletion := range diffResult.deletions {
+			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+				Dest:      deletion.position,
+				ActionKey: storage.DeletionKey,
+				VersionId: newVersion.ID,
+				Content:   deletion.content,
+			})
 
+			if err != nil {
+				return err
 			}
 
-			for i := range deletions {
-				deletion := deletions[i]
-				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-					Dest:      deletion,
-					ActionKey: storage.DeletionKey,
-					VersionId: newVersion.ID,
-				})
+		}
 
-				if err != nil {
-					return err
-				}
+		for _, move := range diffResult.moves {
+			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
+				Start:     sql.Null[int]{V: move.from, Valid: true},
+				Dest:      move.to,
+				Content:   move.content,
+				ActionKey: storage.MoveKey,
+				VersionId: newVersion.ID,
+			})
 
-			}
-
-			for i := range moves {
-				move := moves[i]
-
-				_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-					Start:     sql.Null[int]{V: move.from, Valid: true},
-					Dest:      move.to,
-					ActionKey: storage.MoveKey,
-					VersionId: newVersion.ID,
-				})
-
-				if err != nil {
-					return err
-				}
+			if err != nil {
+				return err
 			}
 		}
 	}
