@@ -29,14 +29,13 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 
 	parseArgs := internal.NewCLIArgsParser(args)
 	var cmd internal.Command
-	var flags []internal.Flag
 	err := parseArgs.GetCommand(&cmd)
 
 	if err != nil {
 		log.Fatalf("error while parsing the commands:\n%v", err)
 	}
 
-	err = parseArgs.GetFlags(&flags)
+	flags, err := parseArgs.GetFlags()
 
 	if err != nil {
 		log.Fatalf("error while parsing the flags:\n%v", err)
@@ -61,7 +60,11 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 			log.Fatalf("diff could not be displayed:\n%s", err)
 		}
 	case internal.Revert:
-		if err := GitRevert(ctx, &repoContainer, &fileIngredients); err != nil {
+		backFlag, err := parseArgs.GetFlag("back")
+		if err != nil {
+			log.Fatalf("you need the --back=X flag for the revert command")
+		}
+		if err := GitRevert(ctx, &repoContainer, &fileIngredients, backFlag); err != nil {
 			log.Fatalf("error while reverting:\n%v", err)
 		}
 	}
