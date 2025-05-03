@@ -18,8 +18,8 @@ const (
 var CommandArr []Command = []Command{Commit, Init, Diff, Revert}
 
 type Flag struct {
-	key   string
-	value string
+	Key   string
+	Value string
 }
 
 type Parsed struct {
@@ -30,7 +30,8 @@ type Parsed struct {
 type CLIArgs interface {
 	Validate() error
 	GetCommand(command *string) Command
-	GetFlags(flags *[]Flag) error
+	GetFlags() ([]Flag, error)
+	GetFlag(key string) (Flag, error)
 }
 
 func parse(args []string) Parsed {
@@ -45,8 +46,8 @@ func parse(args []string) Parsed {
 			keyPart = strings.TrimPrefix(keyPart, "--")
 
 			foundFlags = append(foundFlags, Flag{
-				key:   keyPart,
-				value: valuePart,
+				Key:   keyPart,
+				Value: valuePart,
 			})
 		} else if slices.Contains(CommandArr, Command(arg)) {
 			commands = append(commands, Command(arg))
@@ -88,7 +89,7 @@ func (parser *CLIArgsParser) Validate() error {
 		found := false
 
 		for _, flag := range parser.parsed.flags {
-			if flag.key == "back" {
+			if flag.Key == "back" {
 				found = true
 			}
 		}
@@ -113,13 +114,22 @@ func (parser *CLIArgsParser) GetCommand(command *Command) error {
 	return nil
 }
 
-func (parser *CLIArgsParser) GetFlags(flags *[]Flag) error {
+func (parser *CLIArgsParser) GetFlags() ([]Flag, error) {
 	err := parser.Validate()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	*flags = parser.parsed.flags
-	return nil
+	return parser.parsed.flags, nil
+}
+
+func (parser *CLIArgsParser) GetFlag(key string) (Flag, error) {
+	for _, flag := range parser.parsed.flags {
+		if flag.Key == key {
+			return flag, nil
+		}
+	}
+
+	return Flag{}, fmt.Errorf("flag was not found!")
 }
