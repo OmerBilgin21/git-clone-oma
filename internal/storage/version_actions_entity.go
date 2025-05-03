@@ -21,4 +21,5 @@ type VersionActions struct {
 	Dest      int           `db:"dest"`
 	ActionKey Keys          `db:"action_key"`
 	VersionId int           `db:"version_id"`
+	Content   string        `db:"content"`
 }
