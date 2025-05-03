@@ -86,7 +86,7 @@ func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaReposito
 
 func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error) {
 	if !filename.Valid {
-		return nil, fmt.Errorf("you can not search for a null file name\n")
+		return nil, fmt.Errorf("you can not search for a nil file name\n")
 	}
 
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
@@ -102,8 +102,12 @@ func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filen
 
 	err = omaRepo.db.SelectContext(ctx, &foundRepo, query, args...)
 
-	if err != nil || len(foundRepo) != 1 {
+	if err != nil {
 		return nil, err
+	}
+
+	if len(foundRepo) != 1 {
+		return nil, fmt.Errorf("could not find a repo for given file-repository ID combination, repository ID: %v, filename: %v", omaRepoId, filename.String)
 	}
 
 	return &foundRepo[0], err
