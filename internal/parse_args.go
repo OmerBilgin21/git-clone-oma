@@ -78,8 +78,15 @@ func (parser *CLIArgsParser) Validate() error {
 		return fmt.Errorf("unexpected amount of commands\n")
 	}
 
+	revertMissingBack := "revert command needs a --back=X flag"
+
 	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) < 1 {
+		return fmt.Errorf("%v\n", revertMissingBack)
+	}
+
+	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) >= 1 {
 		found := false
+
 		for _, flag := range parser.parsed.flags {
 			if flag.key == "back" {
 				found = true
@@ -87,8 +94,7 @@ func (parser *CLIArgsParser) Validate() error {
 		}
 
 		if !found {
-			return fmt.Errorf("revert command needs a --back=X flag\n")
-
+			return fmt.Errorf("--back=X was not found among your flags, %v\n", revertMissingBack)
 		}
 	}
 
