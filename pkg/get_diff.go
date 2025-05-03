@@ -5,16 +5,31 @@ import (
 )
 
 type Move struct {
-	from int
-	to   int
+	from    int
+	to      int
+	content string
 }
 
-func GetDiff(oldStr string, newStr string) ([]int, []int, []Move, string, string, error) {
+type AddOrDelete struct {
+	position int
+	content  string
+}
+
+type DiffResult struct {
+	additions     []AddOrDelete
+	deletions     []AddOrDelete
+	moves         []Move
+	normalizedOld string
+	normalizedNew string
+	error         error
+}
+
+func GetDiff(oldStr string, newStr string) DiffResult {
 	normalizedOld, normalizedNew := normalizeLines(oldStr, newStr)
 
 	oldArr, newArr := strings.Split(normalizedOld, "\n"), strings.Split(normalizedNew, "\n")
-	var additions []int
-	var deletions []int
+	var additions []AddOrDelete
+	var deletions []AddOrDelete
 	var moves []Move
 
 	oldMap := make(map[string]int)
@@ -34,15 +49,28 @@ func GetDiff(oldStr string, newStr string) ([]int, []int, []Move, string, string
 		} else if _, exists := oldMap[n]; exists && (oldMap[n] == newMap[n]) {
 			continue
 		} else {
-			additions = append(additions, x)
+			additions = append(additions, AddOrDelete{
+				position: x,
+				content:  n,
+			})
 		}
 	}
 
 	for y, o := range oldArr {
 		if _, exists := newMap[o]; !exists {
-			deletions = append(deletions, y)
+			deletions = append(deletions, AddOrDelete{
+				position: y,
+				content:  o,
+			})
 		}
 	}
 
-	return additions, deletions, moves, normalizedOld, normalizedNew, nil
+	return DiffResult{
+		additions:     additions,
+		deletions:     deletions,
+		moves:         moves,
+		normalizedOld: normalizedOld,
+		normalizedNew: normalizedNew,
+		error:         nil,
+	}
 }
