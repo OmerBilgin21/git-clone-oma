@@ -14,6 +14,7 @@ func versionActionsToMap(data *VersionActions) map[string]any {
 		"dest":       data.Dest,
 		"action_key": data.ActionKey,
 		"version_id": data.VersionId,
+		"content":    data.Content,
 	}
 }
 
@@ -34,7 +35,7 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 	query, args, err := sq.Insert("version_actions").SetMap(versionActionsToMap(data)).Suffix("returning *").ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the create version actions query:\n%v", err)
+		return nil, fmt.Errorf("error while generating the create version actions query:\n%w", err)
 	}
 
 	createdRepo := &VersionActions{}
@@ -44,20 +45,20 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 }
 
 func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
-	query, _, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
+	query, args, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
 		"version_id": versionId,
 	}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%v", err)
+		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%w", err)
 	}
 
 	foundVersionActions := []VersionActions{}
 
-	err = versionActions.db.SelectContext(ctx, foundVersionActions, query)
+	err = versionActions.db.SelectContext(ctx, &foundVersionActions, query, args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while finding version actions for version: %v\nerror:\n%v", versionId, err)
+		return nil, fmt.Errorf("error while finding version actions for version: %v\nerror:\n%w", versionId, err)
 	}
 
 	return foundVersionActions, err
