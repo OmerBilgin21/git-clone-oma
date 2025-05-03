@@ -4,31 +4,53 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 )
 
+type Env string
+
+const (
+	Dev  Env = "DEV"
+	Prod Env = "PRODUCTION"
+)
+
+var EnvArr []Env = []Env{Dev, Prod}
+
 type FileIO interface {
 	CreateRepoInitInfo(repositoryId int) error
 	GetRepositoryId() (int, error)
+	WriteToFile(filename string, content string) error
 }
 
 type FileIOImpl struct {
 	currentDirectory string
 	infoFile         string
 	infoDir          string
+	env              Env
 }
 
 func NewFileIO() *FileIOImpl {
 	currDirr, err := os.Getwd()
 	if err != nil {
-		panic("please give oma execution rights")
+		panic("please give oma execution rights or check your directory permissions")
+	}
+
+	env := os.Getenv("ENV")
+	if !slices.Contains(EnvArr, Env(env)) {
+		panic("please set ENV variable to either 'DEV' or 'PRODUCTION'")
+	}
+
+	if Env(env) == Dev {
+		fmt.Printf("RUNNING ON DEV\n")
 	}
 
 	return &FileIOImpl{
 		currentDirectory: currDirr,
 		infoFile:         "repository_info.txt",
 		infoDir:          ".oma",
+		env:              Env(env),
 	}
 }
 
@@ -77,4 +99,13 @@ func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
 	}
 
 	return -1, fmt.Errorf("repository ID could not be found")
+}
+
+func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error {
+	if repoFileIO.env == Dev {
+		fmt.Printf("would have written to file :%v\nthe ingredients:\n%v\n", filename, content)
+		return nil
+	}
+	// TODO: implement actual write to file
+	return fmt.Errorf("not implemented yet")
 }
