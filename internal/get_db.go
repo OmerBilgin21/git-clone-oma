@@ -16,12 +16,12 @@ func GetDb() *sqlx.DB {
 	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
 
 	if err != nil {
-		log.Fatalf("error while connecting to db: %s", err)
+		log.Fatalf("error while connecting to db: %v", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("something went wrong while pinging the DB: %s", err)
+		log.Fatalf("something went wrong while pinging the DB: %v", err)
 	}
 
 	return db
