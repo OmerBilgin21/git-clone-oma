@@ -46,8 +46,8 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 	}
 
 	for x, n := range newArr {
-		if y, exists := oldMap[n]; exists && (oldMap[n] != newMap[n]) {
-			moves = append(moves, Action{from: y, to: x, content: n})
+		if _, exists := oldMap[n]; exists && (oldMap[n] != newMap[n]) {
+			moves = append(moves, Action{from: oldMap[n], to: newMap[n], content: n})
 		} else if _, exists := oldMap[n]; exists && (oldMap[n] == newMap[n]) {
 			continue
 		} else {
