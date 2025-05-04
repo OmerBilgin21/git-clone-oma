@@ -4,33 +4,35 @@ import (
 	"strings"
 )
 
-type Move struct {
+type Action struct {
 	from    int
 	to      int
 	content string
 }
 
-type AddOrDelete struct {
-	position int
-	content  string
-}
-
 type DiffResult struct {
-	additions     []AddOrDelete
-	deletions     []AddOrDelete
-	moves         []Move
+	additions     []Action
+	deletions     []Action
+	moves         []Action
 	normalizedOld string
 	normalizedNew string
 	error         error
 }
 
-func GetDiff(oldStr string, newStr string) DiffResult {
+func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
+	var oldArr []string
+	var newArr []string
 	normalizedOld, normalizedNew := normalizeLines(oldStr, newStr)
 
-	oldArr, newArr := strings.Split(normalizedOld, "\n"), strings.Split(normalizedNew, "\n")
-	var additions []AddOrDelete
-	var deletions []AddOrDelete
-	var moves []Move
+	if visualMode {
+		oldArr, newArr = strings.Split(normalizedOld, "\n"), strings.Split(normalizedNew, "\n")
+	} else {
+		oldArr, newArr = strings.Split(oldStr, "\n"), strings.Split(newStr, "\n")
+	}
+
+	var additions []Action
+	var deletions []Action
+	var moves []Action
 
 	oldMap := make(map[string]int)
 	newMap := make(map[string]int)
@@ -45,22 +47,22 @@ func GetDiff(oldStr string, newStr string) DiffResult {
 
 	for x, n := range newArr {
 		if y, exists := oldMap[n]; exists && (oldMap[n] != newMap[n]) {
-			moves = append(moves, Move{from: y, to: x})
+			moves = append(moves, Action{from: y, to: x})
 		} else if _, exists := oldMap[n]; exists && (oldMap[n] == newMap[n]) {
 			continue
 		} else {
-			additions = append(additions, AddOrDelete{
-				position: x,
-				content:  n,
+			additions = append(additions, Action{
+				to:      x,
+				content: n,
 			})
 		}
 	}
 
 	for y, o := range oldArr {
 		if _, exists := newMap[o]; !exists {
-			deletions = append(deletions, AddOrDelete{
-				position: y,
-				content:  o,
+			deletions = append(deletions, Action{
+				to:      y,
+				content: o,
 			})
 		}
 	}
