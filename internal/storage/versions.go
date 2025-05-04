@@ -12,6 +12,7 @@ type VersionRepository interface {
 	Get(ctx context.Context, id int) (*Versions, error)
 	GetLatestByRepositoryId(ctx context.Context, repoId int) (*Versions, error)
 	GetMaxVersionNumberForRepo(ctx context.Context, repoId int) (int, error)
+	GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error)
 }
 
 type VersionRepositoryImpl struct {
@@ -115,4 +116,38 @@ func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Conte
 	}
 
 	return &foundVersions[0], nil
+}
+
+func (versions *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
+	distinctVersionIdsQuery, dvida, err := sq.Select("distinct(version_id)").From("versions").Where(squirrel.Eq{
+		"repository_id": repoId,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while building the distinct query for GetAllDistinctByRepoId for repo: %v, error:\n%w", repoId, err)
+	}
+
+	var distinctVersionIds []int
+
+	err = versions.db.SelectContext(ctx, &distinctVersionIds, distinctVersionIdsQuery, dvida...)
+
+	// select distinct(version_id) from versions where repository_id = 33
+	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
+		"repository_id": repoId,
+		"version_id":    distinctVersionIds,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while building GetAllByRepositoryId query:\n%w", err)
+	}
+
+	var foundVersions []Versions
+
+	err = versions.db.SelectContext(ctx, &foundVersions, query, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("no versions found for repository ID: %v, error:\n%w", repoId, err)
+	}
+
+	return foundVersions, nil
 }
