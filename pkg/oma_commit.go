@@ -53,9 +53,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			Valid:  true,
 		}, repoId)
 
-		if err != nil && foundRepo.ID == 0 {
-			panic(fmt.Errorf("something went very wrong\nlease create an issue on GitHub: https://github.com/OmerBilgin21/git-clone-oma \nerror:\n%w", err))
-		} else if err != nil {
+		if err != nil {
 			fmt.Printf("No previous version of the file, creating cache...")
 			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 				FileName: sql.NullString{
@@ -74,6 +72,10 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			}
 
 			continue
+		}
+
+		if foundRepo.ID == 0 {
+			panic(fmt.Errorf("something went very wrong\nlease create an issue on GitHub: https://github.com/OmerBilgin21/git-clone-oma \nerror:\n%w", err))
 		}
 
 		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content, false)
