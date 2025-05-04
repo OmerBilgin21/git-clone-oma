@@ -35,15 +35,6 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		log.Fatalf("error while parsing the commands:\n%v", err)
 	}
 
-	flags, err := parseArgs.GetFlags()
-
-	if err != nil {
-		log.Fatalf("error while parsing the flags:\n%v", err)
-	}
-
-	fmt.Printf("cmd: %v\n", cmd)
-	fmt.Printf("flags: %+v\n", flags)
-
 	switch cmd {
 	case internal.Init:
 		if err := GitInit(ctx, &repoContainer, &fileIngredients); err != nil {
@@ -71,6 +62,11 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		if err := GitRevert(ctx, &repoContainer, &fileIngredients, backFlag); err != nil {
 			log.Fatalf("error while reverting:\n%v", err)
 		}
+	case internal.Log:
+		if err := GitLog(ctx, &repoContainer); err != nil {
+			log.Fatalf("error while logging the commit history: %v", err)
+		}
+		// if err := Gi
 	}
 
 }
