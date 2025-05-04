@@ -13,9 +13,10 @@ const (
 	Init   Command = "init"
 	Diff   Command = "diff"
 	Revert Command = "revert"
+	Log    Command = "log"
 )
 
-var CommandArr []Command = []Command{Commit, Init, Diff, Revert}
+var CommandArr []Command = []Command{Commit, Init, Diff, Revert, Log}
 
 type Flag struct {
 	Key   string
@@ -81,6 +82,15 @@ func (parser *CLIArgsParser) Validate() error {
 
 	commitMissingMsgErrMsg := "commit command needs a --message='<your-message>' flag"
 	revertMissingBackErrMsg := "revert command needs a --back=X flag"
+	standaloneErrMsg := "you can not use flags with the %v command, it is a standalone command"
+
+	if parser.parsed.commands[0] == Init && len(parser.parsed.flags) > 0 {
+		return fmt.Errorf(standaloneErrMsg, Init)
+	}
+
+	if parser.parsed.commands[0] == Log && len(parser.parsed.flags) > 0 {
+		return fmt.Errorf(standaloneErrMsg, Log)
+	}
 
 	if parser.parsed.commands[0] == Commit && len(parser.parsed.flags) < 1 {
 		return fmt.Errorf("%v\n", commitMissingMsgErrMsg)
