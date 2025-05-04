@@ -50,7 +50,7 @@ func renderSideBySideDiff(oldColoured, newColoured, filename string) {
 }
 
 func RenderDiffs(oldContent, newContent, filename string) error {
-	diffResult := GetDiff(oldContent, newContent)
+	diffResult := GetDiff(oldContent, newContent, true)
 
 	if diffResult.error != nil {
 		return fmt.Errorf("diff view would be broken therefore it won't be shown for this file: %v\n", diffResult.error)
