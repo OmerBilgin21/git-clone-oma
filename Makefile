@@ -31,7 +31,7 @@ plain:
 	${RUN_CMD}
 
 test:
-	go test ./...
+	go test -v -count=1 ./...
 
 build: $(BIN_DIR)/$(APP_NAME)-linux \
        $(BIN_DIR)/$(APP_NAME)-macos-arm64 \
