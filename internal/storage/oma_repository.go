@@ -19,6 +19,7 @@ type OmaRepoRepository interface {
 	GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error)
 	Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error)
 	Delete(ctx context.Context, id int) error
+	GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error)
 }
 
 type OmaRepositoryImpl struct {
@@ -154,4 +155,24 @@ func (omaRepo *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 	_, err := omaRepo.db.ExecContext(ctx, query, id)
 
 	return err
+}
+
+func (omaRepo *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error) {
+	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
+		"oma_repo_id": repoId,
+	}).ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("error while building GetAllByRepoId query, error:\n%w", err)
+	}
+
+	var foundRepos []OmaRepository
+
+	err = omaRepo.db.SelectContext(ctx, &foundRepos, query, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while finding the repositories for: %v, error:\n%w", repoId, err)
+	}
+
+	return foundRepos, nil
 }
