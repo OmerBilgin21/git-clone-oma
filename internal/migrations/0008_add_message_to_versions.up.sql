@@ -1,0 +1,2 @@
+ALTER TABLE versions ADD COLUMN message VARCHAR NOT NULL;
+
