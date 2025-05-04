@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"oma/internal"
 	"oma/internal/storage"
 )
 
@@ -34,7 +35,12 @@ func createActions(ctx context.Context, repoContainer *storage.RepositoryContain
 	return nil
 }
 
-func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
+// FIXME: right now, it gets the diff between the current version and the cached version
+// and then creates a commit based on that, it should be:
+// first get the cached version, get the versions for that file, build the latest version
+// and then find the diff between the latest built version and current version
+// and then commit those
+func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients, messageFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
 	if err != nil {
@@ -84,6 +90,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 
 		newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 			RepositoryId: foundRepo.ID,
+			Message:      messageFlag.Value,
 		})
 
 		if err != nil {

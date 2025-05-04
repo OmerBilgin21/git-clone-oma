@@ -51,7 +51,11 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		}
 
 	case internal.Commit:
-		if err := GitCommit(ctx, &repoContainer, &fileIngredients); err != nil {
+		messageFlag, err := parseArgs.GetFlag("message")
+		if err != nil {
+			log.Fatalf("%v\n", err)
+		}
+		if err := GitCommit(ctx, &repoContainer, &fileIngredients, messageFlag); err != nil {
 			log.Fatalf("error while committing your changes:\n%v", err)
 		}
 
@@ -62,7 +66,7 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 	case internal.Revert:
 		backFlag, err := parseArgs.GetFlag("back")
 		if err != nil {
-			log.Fatalf("you need the --back=X flag for the revert command")
+			log.Fatalf("%v\n", err)
 		}
 		if err := GitRevert(ctx, &repoContainer, &fileIngredients, backFlag); err != nil {
 			log.Fatalf("error while reverting:\n%v", err)
