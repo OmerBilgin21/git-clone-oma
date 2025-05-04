@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -15,8 +14,6 @@ const (
 	Dev  Env = "DEV"
 	Prod Env = "PRODUCTION"
 )
-
-var EnvArr []Env = []Env{Dev, Prod}
 
 type FileIO interface {
 	CreateRepoInitInfo(repositoryId int) error
@@ -39,19 +36,19 @@ func NewFileIO() *FileIOImpl {
 	}
 
 	env := os.Getenv("ENV")
-	if !slices.Contains(EnvArr, Env(env)) {
-		panic("please set ENV variable to either 'DEV' or 'PRODUCTION'")
-	}
-
+	var ourEnv Env
 	if Env(env) == Dev {
 		fmt.Printf("RUNNING ON DEV\n")
+		ourEnv = Dev
+	} else {
+		ourEnv = Prod
 	}
 
 	return &FileIOImpl{
 		currentDirectory: currDirr,
 		infoFile:         "repository_info.txt",
 		infoDir:          ".oma",
-		env:              Env(env),
+		env:              ourEnv,
 	}
 }
 
