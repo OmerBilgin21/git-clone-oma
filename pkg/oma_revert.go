@@ -34,6 +34,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			if err := repoContainer.FileIORepository.DeleteFile(file.fileName); err != nil {
 				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.fileName, backAmount)
 			}
+			// TODO: here I should remove the OmaRepository entry
 		}
 
 		maxVersion, _ := repoContainer.VersionsRepository.GetMaxVersionNumberForRepo(ctx, repository.ID)
@@ -43,6 +44,9 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			continue
 		}
 
+		// FIXME: why the latest? I don't know what I was thinking
+		// it should be get latest X by repo id
+		// X = backAmount
 		versions, err := repoContainer.VersionsRepository.GetLatestByRepositoryId(ctx, repository.ID)
 
 		if err != nil {
@@ -68,6 +72,8 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		if err != nil {
 			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
 		}
+
+		// TODO: here I should delete the versions (version actions are tied with a cascade so they'll be auto deleted)
 	}
 
 	return nil
