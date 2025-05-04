@@ -54,7 +54,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return fmt.Errorf("there are versions defined for this file: %v, but no version actions?\nError:%w", file.fileName, err)
 		}
 
-		revertedFile, err := RebuildFile(file.content, versionActions)
+		revertedFile, err := RebuildDiff(file.content, versionActions)
 
 		if err != nil {
 			return fmt.Errorf("error while rebuilding the old version of file: %v, error:\n%w", file.fileName, err)
