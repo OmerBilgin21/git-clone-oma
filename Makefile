@@ -24,6 +24,9 @@ commit:
 revert:
 	${RUN_CMD} revert --back=3
 
+log:
+	${RUN_CMD} log
+
 plain:
 	${RUN_CMD}
 
