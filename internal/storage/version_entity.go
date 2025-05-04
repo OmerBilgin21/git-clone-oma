@@ -11,4 +11,5 @@ type Versions struct {
 	DeletedAt    sql.NullTime `db:"deleted_at"`
 	VersionId    int          `db:"version_id"`
 	RepositoryId int          `db:"repository_id"`
+	Message      string       `db:"message"`
 }

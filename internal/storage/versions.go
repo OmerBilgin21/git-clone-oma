@@ -55,6 +55,7 @@ func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Version
 	query, args, err := sq.Insert("versions").SetMap(map[string]any{
 		"version_id":    nextId,
 		"repository_id": data.RepositoryId,
+		"message":       data.Message,
 	}).Suffix("returning *").ToSql()
 
 	if err != nil {
