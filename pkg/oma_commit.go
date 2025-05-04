@@ -8,6 +8,32 @@ import (
 	"oma/internal/storage"
 )
 
+func createActions(ctx context.Context, repoContainer *storage.RepositoryContainer, actions []Action, versionId int, key storage.Keys) error {
+	for _, action := range actions {
+		actionToCreate := storage.VersionActions{
+			Dest:      action.to,
+			ActionKey: key,
+			VersionId: versionId,
+			Content:   action.content,
+		}
+
+		if key == storage.MoveKey {
+			actionToCreate.Start = sql.Null[int]{
+				Valid: true,
+				V:     action.from,
+			}
+		}
+
+		_, err := repoContainer.VersionActionsRepository.Create(ctx, &actionToCreate)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
@@ -44,7 +70,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			continue
 		}
 
-		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content)
+		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content, false)
 
 		if diffResult.error != nil {
 			return err
@@ -64,46 +90,16 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return err
 		}
 
-		for _, addition := range diffResult.additions {
-			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-				Dest:      addition.position,
-				ActionKey: storage.AdditionKey,
-				VersionId: newVersion.ID,
-				Content:   addition.content,
-			})
-
-			if err != nil {
-				return err
-			}
-
+		if err := createActions(ctx, repoContainer, diffResult.additions, newVersion.ID, storage.AdditionKey); err != nil {
+			return err
 		}
 
-		for _, deletion := range diffResult.deletions {
-			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-				Dest:      deletion.position,
-				ActionKey: storage.DeletionKey,
-				VersionId: newVersion.ID,
-				Content:   deletion.content,
-			})
-
-			if err != nil {
-				return err
-			}
-
+		if err := createActions(ctx, repoContainer, diffResult.deletions, newVersion.ID, storage.DeletionKey); err != nil {
+			return err
 		}
 
-		for _, move := range diffResult.moves {
-			_, err := repoContainer.VersionActionsRepository.Create(ctx, &storage.VersionActions{
-				Start:     sql.Null[int]{V: move.from, Valid: true},
-				Dest:      move.to,
-				Content:   move.content,
-				ActionKey: storage.MoveKey,
-				VersionId: newVersion.ID,
-			})
-
-			if err != nil {
-				return err
-			}
+		if err := createActions(ctx, repoContainer, diffResult.moves, newVersion.ID, storage.MoveKey); err != nil {
+			return err
 		}
 	}
 
