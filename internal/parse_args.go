@@ -79,10 +79,29 @@ func (parser *CLIArgsParser) Validate() error {
 		return fmt.Errorf("unexpected amount of commands\n")
 	}
 
-	revertMissingBack := "revert command needs a --back=X flag"
+	commitMissingMsgErrMsg := "commit command needs a --message='<your-message>' flag"
+	revertMissingBackErrMsg := "revert command needs a --back=X flag"
+
+	if parser.parsed.commands[0] == Commit && len(parser.parsed.flags) < 1 {
+		return fmt.Errorf("%v\n", commitMissingMsgErrMsg)
+	}
+
+	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) >= 1 {
+		found := false
+
+		for _, flag := range parser.parsed.flags {
+			if flag.Key == "message" {
+				found = true
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("--message='<your-message>' was not found among your flags, %v\n", revertMissingBackErrMsg)
+		}
+	}
 
 	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) < 1 {
-		return fmt.Errorf("%v\n", revertMissingBack)
+		return fmt.Errorf("%v\n", revertMissingBackErrMsg)
 	}
 
 	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) >= 1 {
@@ -95,7 +114,7 @@ func (parser *CLIArgsParser) Validate() error {
 		}
 
 		if !found {
-			return fmt.Errorf("--back=X was not found among your flags, %v\n", revertMissingBack)
+			return fmt.Errorf("--back=X was not found among your flags, %v\n", revertMissingBackErrMsg)
 		}
 	}
 
