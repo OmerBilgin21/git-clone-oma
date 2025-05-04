@@ -10,20 +10,20 @@ var Reset = "\033[0m"
 var Orange = "\033[33m"
 
 func ColourTheDiffs(
-	additions []AddOrDelete,
-	deletions []AddOrDelete,
-	moves []Move,
+	additions []Action,
+	deletions []Action,
+	moves []Action,
 	oldStr string,
 	newStr string,
 ) (string, string) {
 	oldArr, newArr := strings.Split(oldStr, "\n"), strings.Split(newStr, "\n")
 
 	for _, x := range additions {
-		newArr[x.position] = Green + newArr[x.position] + Reset
+		newArr[x.to] = Green + newArr[x.to] + Reset
 	}
 
 	for _, y := range deletions {
-		oldArr[y.position] = Red + oldArr[y.position] + Reset
+		oldArr[y.to] = Red + oldArr[y.to] + Reset
 	}
 
 	for _, m := range moves {
