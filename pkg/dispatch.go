@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"oma/internal"
 	"oma/internal/storage"
