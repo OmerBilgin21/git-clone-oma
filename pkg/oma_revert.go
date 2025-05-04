@@ -30,7 +30,10 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}, repoId)
 
 		if err != nil {
-			return fmt.Errorf("no entry found for file: %v\nplease commit your changes before trying to revert", file.fileName)
+			// filename is an absolute path so this should work?
+			if err := repoContainer.FileIORepository.DeleteFile(file.fileName); err != nil {
+				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.fileName, backAmount)
+			}
 		}
 
 		maxVersion, _ := repoContainer.VersionsRepository.GetMaxVersionNumberForRepo(ctx, repository.ID)

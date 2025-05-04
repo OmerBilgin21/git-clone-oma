@@ -22,6 +22,7 @@ type FileIO interface {
 	CreateRepoInitInfo(repositoryId int) error
 	GetRepositoryId() (int, error)
 	WriteToFile(filename string, content string) error
+	DeleteFile(filename string) error
 }
 
 type FileIOImpl struct {
@@ -108,4 +109,19 @@ func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error
 	}
 	// TODO: implement actual write to file
 	return fmt.Errorf("not implemented yet")
+}
+
+func (repoFileIO *FileIOImpl) DeleteFile(filename string) error {
+	if repoFileIO.env == Dev {
+		fmt.Printf("file: %v would have been deleted\n", filename)
+	}
+	if _, err := os.Stat(filename); err == nil {
+		if err := os.RemoveAll(filename); err != nil {
+			return fmt.Errorf("error while removing the .oma directory:\n%w", err)
+		}
+
+		fmt.Printf("file removed\n")
+	}
+
+	return nil
 }
