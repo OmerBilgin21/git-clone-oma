@@ -60,7 +60,7 @@ func TestGetDiff(test *testing.T) {
 			}
 
 			if len(diffResult.additions) != len(tCase.additions) || len(diffResult.deletions) != len(tCase.deletion) || len(diffResult.moves) != len(tCase.moves) {
-				t.Errorf("addition or deletion count is wrong\nadditions:\n%+v\ndeletions:\n%+v\nmoves:\n%+v", diffResult.additions, diffResult.deletions, diffResult.moves)
+				t.Errorf("addition, deletion or move count is wrong\nadditions:\n%+v\ndeletions:\n%+v\nmoves:\n%+v", diffResult.additions, diffResult.deletions, diffResult.moves)
 				t.FailNow()
 			}
 
