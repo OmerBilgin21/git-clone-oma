@@ -7,45 +7,58 @@ import (
 	"strings"
 )
 
-func RebuildDiff(oldVersion string, versionActions []storage.VersionActions) (string, error) {
-	var rebuilt []string
-	oldArr := strings.Split(oldVersion, "\n")
-
-	for _, action := range versionActions {
-		if action.ActionKey == storage.AdditionKey {
-			// don't forget, we'll delete here
-			// fmt.Printf("addition: %+v\n", addition)
-			if action.Dest > len(oldArr) || action.Dest+1 > len(oldArr) {
-				fmt.Printf("len oldArr: %v\n", len(oldArr))
-				continue
+func reconcileVersionActionsAfterApply(remaining []storage.VersionActions, wasDone storage.VersionActions, reverseMode bool) []storage.VersionActions {
+	reconciled := remaining
+	// TODO: pretty obvious, invert
+	if reverseMode {
+		fmt.Printf("not implemented yet!\n")
+	} else {
+		for i, action := range remaining {
+			if wasDone.ActionKey == storage.DeletionKey {
+				if (action.ActionKey == storage.AdditionKey || action.ActionKey == storage.DeletionKey) && action.Dest >= wasDone.Dest {
+					temp := remaining[i]
+					remaining = slices.Delete(remaining, i, i+1)
+					temp.Dest--
+					remaining = slices.Insert(remaining, i, temp)
+				}
+			} else if wasDone.ActionKey == storage.AdditionKey {
+				if (action.ActionKey == storage.AdditionKey || action.ActionKey == storage.DeletionKey) && action.Dest >= wasDone.Dest {
+					temp := remaining[i]
+					remaining = slices.Delete(remaining, i, i+1)
+					temp.Dest++
+					remaining = slices.Insert(remaining, i, temp)
+				}
 			}
-			fmt.Println("continues")
-			rebuilt = slices.Delete(oldArr, action.Dest, action.Dest+1)
-		} else if action.ActionKey == storage.DeletionKey {
-			// don't forget we'll add here
-			// fmt.Printf("deletion: %+v\n", deletion)
-			if action.Dest > len(oldArr) || action.Dest+1 > len(oldArr) {
-				fmt.Printf("len oldArr: %v\n", len(oldArr))
-				continue
-			}
-			fmt.Println("continues")
-			rebuilt = slices.Insert(oldArr, action.Dest, action.Content)
-		} else {
-			// don't forget to use the from and to inverted here
-			// fmt.Printf("move: %+v\n", move)
-			if action.Dest > len(oldArr) || action.Dest+1 > len(oldArr) {
-				fmt.Printf("len oldArr: %v\n", len(oldArr))
-				continue
-			}
-			if action.Start.V > len(oldArr) || action.Start.V+1 > len(oldArr) {
-				fmt.Printf("len oldArr: %v\n", len(oldArr))
-				continue
-			}
-			fmt.Println("continues")
-			rebuilt = slices.Delete(oldArr, action.Dest, action.Dest+1)
-			rebuilt = slices.Insert(oldArr, action.Start.V, action.Content)
 		}
 	}
 
-	return strings.Join(rebuilt, "\n"), nil
+	return reconciled
+}
+
+func RecursiveRebuildDiff(oldArr []string, versionActions []storage.VersionActions, newVersion *string, revertMode bool) bool {
+	// TODO: again, pretty obvious
+	if len(versionActions) > 0 && revertMode {
+		fmt.Printf("not implemented yet!\n")
+	} else if len(versionActions) > 0 && !revertMode {
+		action := versionActions[0]
+
+		if action.ActionKey == storage.DeletionKey {
+			oldArr = slices.Delete(oldArr, action.Dest, action.Dest+1)
+		} else if action.ActionKey == storage.AdditionKey {
+			oldArr = slices.Insert(oldArr, action.Dest, action.Content)
+		} else {
+			oldArr = slices.Delete(oldArr, action.Start.V, action.Start.V+1)
+			oldArr = slices.Insert(oldArr, action.Dest, action.Content)
+		}
+
+		remainders := slices.Delete(versionActions, 0, 1)
+		reconciled := reconcileVersionActionsAfterApply(remainders, action, revertMode)
+		*newVersion = strings.Join(oldArr, "\n")
+		if res := RecursiveRebuildDiff(oldArr, reconciled, newVersion, revertMode); res {
+			return true
+		}
+	}
+
+	*newVersion = strings.Join(oldArr, "\n")
+	return true
 }
