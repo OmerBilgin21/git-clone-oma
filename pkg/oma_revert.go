@@ -26,7 +26,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	}
 
 	for _, file := range *fileIngrediends {
-		repository, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
+		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
 			Valid:  true,
 			String: file.fileName,
 		}, repoId)

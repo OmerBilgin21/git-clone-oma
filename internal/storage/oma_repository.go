@@ -16,7 +16,7 @@ type OmaRepoRepository interface {
 	Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error)
 	Get(ctx context.Context, id int) (*OmaRepository, error)
 	GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error)
-	GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error)
+	GetByFilename(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error)
 	Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error)
 	Delete(ctx context.Context, id int) error
 	GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error)
@@ -85,7 +85,7 @@ func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaReposito
 
 }
 
-func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error) {
+func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sql.NullString, omaRepoId int) (*OmaRepository, error) {
 	if !filename.Valid {
 		return nil, fmt.Errorf("you can not search for a nil file name\n")
 	}
@@ -96,7 +96,7 @@ func (omaRepo *OmaRepositoryImpl) GetLatestByFileName(ctx context.Context, filen
 	}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while generating the GetLatestByFileName query:\n%v", err)
+		return nil, fmt.Errorf("error while generating the GetByFilename query:\n%v", err)
 	}
 
 	foundRepo := []OmaRepository{}

@@ -14,7 +14,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 	}
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
 		}, repoId)
