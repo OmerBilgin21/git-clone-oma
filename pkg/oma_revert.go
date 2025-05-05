@@ -7,8 +7,10 @@ import (
 	"oma/internal"
 	"oma/internal/storage"
 	"strconv"
+	"strings"
 )
 
+// FIXME: adapt it to the new fixed versions of GetDiff and RecursiveRebuildDiff
 func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]FileIngredients, backFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
@@ -50,6 +52,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		versions, err := repoContainer.VersionsRepository.GetLatestByRepositoryId(ctx, repository.ID)
 
 		if err != nil {
+
 			continue
 		}
 
@@ -61,11 +64,9 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return fmt.Errorf("there are versions defined for this file: %v, but no version actions?\nError:%w", file.fileName, err)
 		}
 
-		revertedFile, err := RebuildDiff(file.content, versionActions)
-
-		if err != nil {
-			return fmt.Errorf("error while rebuilding the old version of file: %v, error:\n%w", file.fileName, err)
-		}
+		oldVersion := strings.Split(file.content, "\n")
+		var revertedFile string
+		RecursiveRebuildDiff(oldVersion, versionActions, &revertedFile, true)
 
 		err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
 
