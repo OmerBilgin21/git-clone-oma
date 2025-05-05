@@ -17,11 +17,11 @@ func TestGetDiff(test *testing.T) {
 		normalizedNew string
 	}{
 		{
-			name:      "replace first line",
+			name:      "add to second line",
 			oldStr:    "hi\nthere\nbrother\nhowdy",
-			newStr:    "hello\nthere\nbrother\nhowdy",
-			additions: []Action{{to: 0, content: "hello"}},
-			deletion:  []Action{{to: 0, content: "hi"}},
+			newStr:    "hi\nthere\nyiha\nbrother\nhowdy",
+			additions: []Action{{to: 2, content: "yiha"}},
+			deletion:  []Action{},
 			moves:     []Action{},
 		},
 		{
@@ -39,6 +39,25 @@ func TestGetDiff(test *testing.T) {
 			additions: []Action{},
 			deletion:  []Action{},
 			moves:     []Action{{from: 1, to: 0, content: "there"}},
+		},
+		{
+			name:      "replace first line",
+			oldStr:    "hi\nthere\nbrother\nhowdy",
+			newStr:    "hello\nthere\nbrother\nhowdy",
+			additions: []Action{{to: 0, content: "hello"}},
+			deletion:  []Action{{to: 0, content: "hi"}},
+			moves:     []Action{},
+		},
+		{
+			name:      "all actions to/from the same place",
+			oldStr:    "hi\nthere\nbrother\nhowdy",
+			newStr:    "brother\nthere\nwassup\nhowdy",
+			additions: []Action{{to: 2, content: "wassup"}},
+			// hi there wassup brother howdy
+			deletion: []Action{{to: 0, content: "hi"}},
+			// there wassup brother howdy
+			moves: []Action{{from: 2, to: 0, content: "brother"}},
+			// brother there wassup howdy
 		},
 		{
 			name:      "no changes",

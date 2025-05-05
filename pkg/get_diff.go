@@ -64,6 +64,28 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 		}
 	}
 
+	// sort.Slice(temp, func(i, j int) bool {
+	//
+	// })
+
+	// fmt.Printf("newStr: %+v\n", newStr)
+	// fmt.Printf("oldStr: %+v\n", oldStr)
+	// if len(additions) > 0 {
+	// 	// fmt.Printf("\nadditions before: %+v\n", additions)
+	// 	slices.SortFunc(additions, func(a, b Action) int {
+	// 		if a.to < b.to {
+	// 			return -1
+	// 		} else if a.to > b.to {
+	// 			return 1
+	// 		} else {
+	// 			return 0
+	// 		}
+	// 	})
+	// 	// fmt.Printf("\nadditions after: %+v\n", additions)
+	// }
+
+	// fmt.Printf("additions: %+v\n", additions)
+
 	// in order to properly understand what is really moved, we need a temp version of the old
 	// string where we apply the additions and deletions first
 	temp := oldArr
@@ -71,6 +93,7 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 		temp = slices.Insert(temp, add.to, add.content)
 	}
 
+	// fmt.Printf("deletions: %+v\n", deletions)
 	for _, del := range deletions {
 		temp = slices.Delete(temp, del.to, del.to+1)
 	}
@@ -92,6 +115,13 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 			}
 			if !skip {
 				moves = append(moves, toBeAdded)
+				// in order to keep track of what was shifted to where,
+				// after each move, we have to be continuously updating the temp/tempMap
+				temp = slices.Delete(temp, toBeAdded.from, toBeAdded.from+1)
+				temp = slices.Insert(temp, toBeAdded.to, toBeAdded.content)
+				for i, l := range temp {
+					tempMap[l] = i
+				}
 			}
 		}
 	}
