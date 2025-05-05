@@ -30,7 +30,7 @@ func TestGetDiff(test *testing.T) {
 			newStr:    "there\nbrother\nhowdy",
 			additions: []Action{},
 			deletion:  []Action{{to: 0, content: "hi"}},
-			moves:     []Action{{from: 1, to: 0, content: "there"}, {from: 2, to: 1, content: "brother"}, {from: 3, to: 2, content: "howdy"}},
+			moves:     []Action{},
 		},
 		{
 			name:      "move first line to next",
@@ -38,7 +38,7 @@ func TestGetDiff(test *testing.T) {
 			newStr:    "there\nhi\nbrother\nhowdy",
 			additions: []Action{},
 			deletion:  []Action{},
-			moves:     []Action{{from: 1, to: 0, content: "there"}, {from: 0, to: 1, content: "hi"}},
+			moves:     []Action{{from: 1, to: 0, content: "there"}},
 		},
 		{
 			name:      "no changes",

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -46,11 +47,7 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 	}
 
 	for x, n := range newArr {
-		if _, exists := oldMap[n]; exists && (oldMap[n] != newMap[n]) {
-			moves = append(moves, Action{from: oldMap[n], to: newMap[n], content: n})
-		} else if _, exists := oldMap[n]; exists && (oldMap[n] == newMap[n]) {
-			continue
-		} else {
+		if _, exists := oldMap[n]; !exists {
 			additions = append(additions, Action{
 				to:      x,
 				content: n,
@@ -64,6 +61,38 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 				to:      y,
 				content: o,
 			})
+		}
+	}
+
+	// in order to properly understand what is really moved, we need a temp version of the old
+	// string where we apply the additions and deletions first
+	temp := oldArr
+	for _, add := range additions {
+		temp = slices.Insert(temp, add.to, add.content)
+	}
+
+	for _, del := range deletions {
+		temp = slices.Delete(temp, del.to, del.to+1)
+	}
+
+	tempMap := make(map[string]int)
+
+	for i, l := range temp {
+		tempMap[l] = i
+	}
+
+	for _, n := range newArr {
+		if _, exists := tempMap[n]; exists && (tempMap[n] != newMap[n]) {
+			toBeAdded := Action{from: tempMap[n], to: newMap[n], content: n}
+			skip := false
+			for _, move := range moves {
+				if move.from == toBeAdded.to && move.to == toBeAdded.from {
+					skip = true
+				}
+			}
+			if !skip {
+				moves = append(moves, toBeAdded)
+			}
 		}
 	}
 
