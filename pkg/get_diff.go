@@ -64,28 +64,6 @@ func GetDiff(oldStr string, newStr string, visualMode bool) DiffResult {
 		}
 	}
 
-	// sort.Slice(temp, func(i, j int) bool {
-	//
-	// })
-
-	// fmt.Printf("newStr: %+v\n", newStr)
-	// fmt.Printf("oldStr: %+v\n", oldStr)
-	// if len(additions) > 0 {
-	// 	// fmt.Printf("\nadditions before: %+v\n", additions)
-	// 	slices.SortFunc(additions, func(a, b Action) int {
-	// 		if a.to < b.to {
-	// 			return -1
-	// 		} else if a.to > b.to {
-	// 			return 1
-	// 		} else {
-	// 			return 0
-	// 		}
-	// 	})
-	// 	// fmt.Printf("\nadditions after: %+v\n", additions)
-	// }
-
-	// fmt.Printf("additions: %+v\n", additions)
-
 	// in order to properly understand what is really moved, we need a temp version of the old
 	// string where we apply the additions and deletions first
 	temp := oldArr
