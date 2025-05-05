@@ -96,7 +96,7 @@ func (parser *CLIArgsParser) Validate() error {
 		return fmt.Errorf("%v\n", commitMissingMsgErrMsg)
 	}
 
-	if parser.parsed.commands[0] == Revert && len(parser.parsed.flags) >= 1 {
+	if parser.parsed.commands[0] == Commit && len(parser.parsed.flags) >= 1 {
 		found := false
 
 		for _, flag := range parser.parsed.flags {
@@ -106,7 +106,7 @@ func (parser *CLIArgsParser) Validate() error {
 		}
 
 		if !found {
-			return fmt.Errorf("--message='<your-message>' was not found among your flags, %v\n", revertMissingBackErrMsg)
+			return fmt.Errorf("--message='<your-message>' was not found among your flags, %v\n", commitMissingMsgErrMsg)
 		}
 	}
 
