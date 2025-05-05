@@ -1,11 +1,11 @@
 # OMA
 
-Git clone with limited commands, without remote and worktrees.
-I will not make use of any library for the core logic as long as I can help it (except the stdlib of course)
-I will however, use DB clients, migration tools...etc I have no interest in implementing those myself.
-So far, there's only one library I used for something that could be considered as core logic is go-runewidth.
-Because well, I'm really not interested in doing width calculations (at least more than I'm already doing) for non-UTF-8 chars and stuff.
-You can check out the dependencies from [here](https://github.com/OmerBilgin21/git-clone-oma/network/dependencies) beware that some of those are my installed libraries' dependencies
+Git clone with limited commands, without remote and worktrees.  
+I will not make use of any library for the core logic as long as I can help it (except the stdlib of course)  
+I will however, use DB clients, migration tools...etc I have no interest in implementing those myself.  
+So far, there's only one library I used for something that could be considered as core logic is go-runewidth.  
+Because well, I'm really not interested in doing width calculations (at least more than I'm already doing) for non-UTF-8 chars and stuff.  
+You can check out the dependencies from [here](https://github.com/OmerBilgin21/git-clone-oma/network/dependencies) beware that some of those are my installed libraries' dependencies  
 
 Current accomplished tasks:
  * Initialize a repository, save the current snapshot of the current folder
