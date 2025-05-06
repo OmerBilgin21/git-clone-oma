@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"oma/internal"
 	"oma/internal/storage"
 	"strconv"
 	"strings"
 )
 
-// FIXME: adapt it to the new fixed versions of GetDiff and RecursiveRebuildDiff
 func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]FileIngredients, backFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
@@ -18,7 +18,6 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		return err
 	}
 
-	fmt.Printf("backFlag.Value: %v\n", backFlag.Value)
 	backAmount, err := strconv.Atoi(backFlag.Value)
 
 	if err != nil {
@@ -32,11 +31,18 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}, repoId)
 
 		if err != nil {
+			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.fileName, err)
+		}
+
+		if repository.ID == 0 {
 			// filename is an absolute path so this should work?
 			if err := repoContainer.FileIORepository.DeleteFile(file.fileName); err != nil {
 				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.fileName, backAmount)
 			}
-			// TODO: here I should remove the OmaRepository entry
+			err = repoContainer.OmaRepository.Delete(ctx, repository.ID)
+			if err != nil {
+				return fmt.Errorf("error while deleting the file entry:\n%w", err)
+			}
 		}
 
 		maxVersion, _ := repoContainer.VersionsRepository.GetMaxVersionNumberForRepo(ctx, repository.ID)
@@ -46,36 +52,33 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			continue
 		}
 
-		// FIXME: why the latest? I don't know what I was thinking
-		// it should be get latest X by repo id
-		// X = backAmount
-		versions, err := repoContainer.VersionsRepository.GetLatestByRepositoryId(ctx, repository.ID)
+		versions, err := repoContainer.VersionsRepository.GetLatestXByRepoId(ctx, repository.ID, backAmount)
 
 		if err != nil {
-
-			continue
+			return fmt.Errorf("error while retrieving versions:\n%w", err)
 		}
 
-		fmt.Printf("found version: %+v\nfor file: %v\n", versions, file.fileName)
+		for _, version := range versions {
+			versionActions, err := repoContainer.VersionActionsRepository.GetByVersionId(ctx, version.ID)
 
-		versionActions, err := repoContainer.VersionActionsRepository.GetByVersionId(ctx, versions.ID)
+			if err != nil {
+				return fmt.Errorf("there are versions defined for this file: %v, but no version actions?\nError:%w", file.fileName, err)
+			}
 
-		if err != nil {
-			return fmt.Errorf("there are versions defined for this file: %v, but no version actions?\nError:%w", file.fileName, err)
+			oldVersion := strings.Split(file.content, "\n")
+			var revertedFile string
+			RecursiveRebuildDiff(oldVersion, versionActions, &revertedFile, true)
+
+			err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
+
+			if err != nil {
+				return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
+			}
+
+			repoContainer.VersionsRepository.Delete(ctx, version.ID)
 		}
-
-		oldVersion := strings.Split(file.content, "\n")
-		var revertedFile string
-		RecursiveRebuildDiff(oldVersion, versionActions, &revertedFile, true)
-
-		err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
-
-		if err != nil {
-			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
-		}
-
-		// TODO: here I should delete the versions (version actions are tied with a cascade so they'll be auto deleted)
 	}
 
+	log.Printf("%v commits reverted successfully", backAmount)
 	return nil
 }
