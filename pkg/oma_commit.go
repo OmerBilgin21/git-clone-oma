@@ -49,7 +49,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}, repoId)
 
 		if err != nil {
-			return fmt.Errorf("error while finding")
+			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.fileName, err)
 		}
 
 		if foundRepo.ID == 0 {
