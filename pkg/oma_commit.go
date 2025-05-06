@@ -35,11 +35,6 @@ func createActions(ctx context.Context, repoContainer *storage.RepositoryContain
 	return nil
 }
 
-// FIXME: right now, it gets the diff between the current version and the cached version
-// and then creates a commit based on that, it should be:
-// first get the cached version, get the versions for that file, build the latest version
-// and then find the diff between the latest built version and current version
-// and then commit those
 func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients, messageFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
@@ -48,12 +43,16 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	}
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetLatestByFileName(ctx, sql.NullString{
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
 			String: ingredient.fileName,
 			Valid:  true,
 		}, repoId)
 
 		if err != nil {
+			return fmt.Errorf("error while finding")
+		}
+
+		if foundRepo.ID == 0 {
 			fmt.Printf("No previous version of the file, creating cache...")
 			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
 				FileName: sql.NullString{
@@ -68,18 +67,13 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			})
 
 			if err != nil {
-				return fmt.Errorf("error while creating a new file cache:\n%v", err)
+				return fmt.Errorf("error while creating a new file cache:\n%w", err)
 			}
 
 			continue
 		}
 
-		if foundRepo.ID == 0 {
-			panic(fmt.Errorf("something went very wrong\nlease create an issue on GitHub: https://github.com/OmerBilgin21/git-clone-oma \nerror:\n%w", err))
-		}
-
 		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content, false)
-
 		if diffResult.error != nil {
 			return err
 		}
@@ -87,8 +81,6 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		if len(diffResult.additions) == 0 && len(diffResult.deletions) == 0 && len(diffResult.moves) == 0 {
 			continue
 		}
-
-		fmt.Printf("changes detected, committing file: %v\n", ingredient.fileName)
 
 		newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 			RepositoryId: foundRepo.ID,
