@@ -21,6 +21,7 @@ func versionActionsToMap(data *VersionActions) map[string]any {
 type VersionActionsRepository interface {
 	Create(ctx context.Context, data *VersionActions) (*VersionActions, error)
 	GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error)
+	DeleteByVersionId(ctx context.Context, versionId int) error
 }
 
 type VersionActionsRepositoryImpl struct {
@@ -47,6 +48,8 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
 	query, args, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
 		"version_id": versionId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
@@ -62,4 +65,11 @@ func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.C
 	}
 
 	return foundVersionActions, err
+}
+
+func (versionActions *VersionActionsRepositoryImpl) DeleteByVersionId(ctx context.Context, versionId int) error {
+	query := `update version_actions set deleted_at = now() where version_id = $1`
+	_, err := versionActions.db.ExecContext(ctx, query, versionId)
+
+	return err
 }

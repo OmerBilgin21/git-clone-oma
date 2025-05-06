@@ -10,7 +10,8 @@ import (
 type VersionRepository interface {
 	Create(ctx context.Context, data *Versions) (*Versions, error)
 	Get(ctx context.Context, id int) (*Versions, error)
-	GetLatestByRepositoryId(ctx context.Context, repoId int) (*Versions, error)
+	Delete(ctx context.Context, id int) error
+	GetLatestXByRepoId(ctx context.Context, repoId, x int) ([]Versions, error)
 	GetMaxVersionNumberForRepo(ctx context.Context, repoId int) (int, error)
 	GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error)
 	GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error)
@@ -77,6 +78,8 @@ func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Version
 func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, error) {
 	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"id": id,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
@@ -93,7 +96,7 @@ func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versio
 	return foundRepo, nil
 }
 
-func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Context, repoId int) (*Versions, error) {
+func (versions *VersionRepositoryImpl) GetLatestXByRepoId(ctx context.Context, repoId, x int) ([]Versions, error) {
 	latestVersionId, err := versions.GetMaxVersionNumberForRepo(ctx, repoId)
 
 	if err != nil {
@@ -102,26 +105,31 @@ func (versions *VersionRepositoryImpl) GetLatestByRepositoryId(ctx context.Conte
 
 	versionsQuery, versionsArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
-		"version_id":    latestVersionId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
+	}).Where(squirrel.LtOrEq{
+		"version_id": latestVersionId - x,
 	}).ToSql()
 
 	if err != nil {
-		return nil, fmt.Errorf("error while building GetLatestByRepositoryId query:\n%w", err)
+		return nil, fmt.Errorf("error while building GetLatestXByRepoId query:\n%w", err)
 	}
 
 	foundVersions := []Versions{}
 	err = versions.db.SelectContext(ctx, &foundVersions, versionsQuery, versionsArgs...)
 
-	if len(foundVersions) != 1 || err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("something went very wrong, please create an issue. error:\n%w", err)
 	}
 
-	return &foundVersions[0], nil
+	return foundVersions, nil
 }
 
 func (versions *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	distinctVersionIdsQuery, dvida, err := sq.Select("distinct(version_id)").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
@@ -155,6 +163,8 @@ func (versions *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Contex
 func (versions *VersionRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
@@ -170,4 +180,11 @@ func (versions *VersionRepositoryImpl) GetAllByRepoId(ctx context.Context, repoI
 	}
 
 	return foundVersions, nil
+}
+
+func (versions *VersionRepositoryImpl) Delete(ctx context.Context, id int) error {
+	query := `update versions set deleted_at = now() where id = $1`
+	_, err := versions.db.ExecContext(ctx, query, id)
+
+	return err
 }

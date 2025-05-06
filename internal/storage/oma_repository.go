@@ -72,7 +72,11 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 }
 
 func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
-	query, _, err := sq.Select("repositories").Where(squirrel.Eq{"id": id}).ToSql()
+	query, _, err := sq.Select("repositories").Where(squirrel.Eq{
+		"id": id,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
+	}).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while getting:\n%v", err)
@@ -81,6 +85,11 @@ func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaReposito
 	foundRepo := &OmaRepository{}
 
 	err = omaRepo.db.SelectContext(ctx, foundRepo, query, id)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return foundRepo, err
 
 }
@@ -93,6 +102,8 @@ func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sq
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"filename":    filename.String,
 		"oma_repo_id": omaRepoId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
@@ -115,7 +126,11 @@ func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sq
 }
 
 func (omaRepo *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
-	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{"id": ids}).ToSql()
+	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
+		"id": ids,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
+	}).ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("error at GetMany:\n%v", err)
 	}
@@ -160,6 +175,8 @@ func (omaRepo *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 func (omaRepo *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"oma_repo_id": repoId,
+	}).Where(squirrel.NotEq{
+		"deleted_at": nil,
 	}).ToSql()
 
 	if err != nil {
