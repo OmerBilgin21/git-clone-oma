@@ -30,6 +30,9 @@ log:
 plain:
 	${RUN_CMD}
 
+reinitialize:
+	make reset;make init
+
 test:
 	go test -v -count=1 ./...
 
