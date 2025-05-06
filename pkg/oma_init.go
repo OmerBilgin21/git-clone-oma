@@ -30,13 +30,14 @@ func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 			OmaRepoId: nextId,
 		})
 
+		if err != nil {
+			return err
+		}
+
 		if i == 0 {
 			randomCreatedRepo = createdRepo
 		}
 
-		if err != nil {
-			return err
-		}
 	}
 
 	err = repoContainer.FileIORepository.CreateRepoInitInfo(randomCreatedRepo.OmaRepoId)
