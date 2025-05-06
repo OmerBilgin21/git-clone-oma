@@ -78,9 +78,7 @@ func (versions *VersionRepositoryImpl) Create(ctx context.Context, data *Version
 func (versions *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, error) {
 	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"id": id,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while generating the create versions query:\n%w", err)
@@ -105,9 +103,7 @@ func (versions *VersionRepositoryImpl) GetLatestXByRepoId(ctx context.Context, r
 
 	versionsQuery, versionsArgs, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).Where(squirrel.LtOrEq{
+	}).Where(squirrel.Expr("deleted_at IS NULL")).Where(squirrel.LtOrEq{
 		"version_id": latestVersionId - x,
 	}).ToSql()
 
@@ -128,9 +124,7 @@ func (versions *VersionRepositoryImpl) GetLatestXByRepoId(ctx context.Context, r
 func (versions *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	distinctVersionIdsQuery, dvida, err := sq.Select("distinct(version_id)").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while building the distinct query for GetAllDistinctByRepoId for repo: %v, error:\n%w", repoId, err)
@@ -163,9 +157,7 @@ func (versions *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Contex
 func (versions *VersionRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	query, args, err := sq.Select("*").From("versions").Where(squirrel.Eq{
 		"repository_id": repoId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while building GetAllByRepositoryId query:\n%w", err)

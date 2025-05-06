@@ -60,6 +60,10 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 		"oma_repo_id": data.OmaRepoId,
 	}).Suffix("returning *").ToSql()
 
+	if err != nil {
+		return nil, fmt.Errorf("error while building the create query:\n%v", err)
+	}
+
 	createdRepo := &OmaRepository{}
 
 	err = omaRepo.db.GetContext(ctx, createdRepo, query, args...)
@@ -74,9 +78,7 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
 	query, _, err := sq.Select("repositories").Where(squirrel.Eq{
 		"id": id,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while getting:\n%v", err)
@@ -102,9 +104,7 @@ func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sq
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"filename":    filename.String,
 		"oma_repo_id": omaRepoId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while generating the GetByFilename query:\n%v", err)
@@ -128,9 +128,7 @@ func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sq
 func (omaRepo *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"id": ids,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("error at GetMany:\n%v", err)
 	}
@@ -175,9 +173,7 @@ func (omaRepo *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 func (omaRepo *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error) {
 	query, args, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"oma_repo_id": repoId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while building GetAllByRepoId query, error:\n%w", err)

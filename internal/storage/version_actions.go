@@ -48,9 +48,7 @@ func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, 
 func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
 	query, args, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
 		"version_id": versionId,
-	}).Where(squirrel.NotEq{
-		"deleted_at": nil,
-	}).ToSql()
+	}).Where(squirrel.Expr("deleted_at IS NOT NULL")).ToSql()
 
 	if err != nil {
 		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%w", err)
