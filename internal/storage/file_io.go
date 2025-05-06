@@ -111,6 +111,7 @@ func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error
 func (repoFileIO *FileIOImpl) DeleteFile(filename string) error {
 	if repoFileIO.env == Dev {
 		fmt.Printf("file: %v would have been deleted\n", filename)
+		return nil
 	}
 	if _, err := os.Stat(filename); err == nil {
 		if err := os.RemoveAll(filename); err != nil {
