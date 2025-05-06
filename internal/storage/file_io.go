@@ -101,11 +101,27 @@ func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
 
 func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error {
 	if repoFileIO.env == Dev {
-		fmt.Printf("would have written to file :%v\nthe ingredients:\n%v\n", filename, content)
+		fmt.Printf("would have written to file :%v\nthe content:\n%v\n", filename, content)
 		return nil
 	}
-	// TODO: implement actual write to file
-	return fmt.Errorf("not implemented yet")
+
+	err := os.MkdirAll(filename, 0755)
+
+	if err != nil {
+		return fmt.Errorf("error while creating file parent(s): %v\nerror:\n%w", filename, err)
+	}
+
+	file, err := os.Create(filename)
+	defer file.Close()
+
+	if err != nil {
+		return fmt.Errorf("error while creating file:\n%v\nerror:\n%w", filename, err)
+	}
+
+	contentInBytes := []byte(content)
+	file.Write(contentInBytes)
+
+	return nil
 }
 
 func (repoFileIO *FileIOImpl) DeleteFile(filename string) error {
