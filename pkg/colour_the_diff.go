@@ -1,33 +1,31 @@
 package pkg
 
 import (
+	"oma/internal/storage"
 	"strings"
 )
 
 var Red = "\033[31m"
 var Green = "\033[32m"
 var Reset = "\033[0m"
-var Orange = "\033[33m"
 
 func ColourTheDiffs(
-	additions []Action,
-	deletions []Action,
-	moves []Action,
+	actions []Action,
 	oldStr string,
 	newStr string,
 ) (string, string) {
 	oldArr, newArr := strings.Split(oldStr, "\n"), strings.Split(newStr, "\n")
 
-	for _, x := range additions {
-		newArr[x.to] = Green + newArr[x.to] + Reset
-	}
-
-	for _, y := range deletions {
-		oldArr[y.to] = Red + oldArr[y.to] + Reset
-	}
-
-	for _, m := range moves {
-		newArr[m.to] = Orange + newArr[m.to] + Reset
+	for _, x := range actions {
+		if x.ActionType == storage.AdditionKey {
+			if x.Pos < len(newArr) {
+				newArr[x.Pos] = Green + newArr[x.Pos] + Reset
+			}
+		} else {
+			if x.Pos < len(oldArr) {
+				oldArr[x.Pos] = Red + oldArr[x.Pos] + Reset
+			}
+		}
 	}
 
 	return strings.Join(oldArr, "\n"), strings.Join(newArr, "\n")
