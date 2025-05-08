@@ -10,8 +10,7 @@ import (
 
 func versionActionsToMap(data *VersionActions) map[string]any {
 	return map[string]any{
-		"start":      data.Start,
-		"dest":       data.Dest,
+		"pos":        data.Pos,
 		"action_key": data.ActionKey,
 		"version_id": data.VersionId,
 		"content":    data.Content,
