@@ -18,7 +18,7 @@ Current accomplished tasks:
  * Somewhat decent argument parsing and making use of flags for commands when needed
 
 Diff view with fixed widths and coloring:
-
+![Screenshot from 2025-05-08 18-51-21](https://github.com/user-attachments/assets/c8e0f3c6-ebb0-4b59-873d-dfbc473480c3)
   
 There is not much else to show visually.
   
