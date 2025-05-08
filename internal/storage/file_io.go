@@ -18,6 +18,7 @@ const (
 type FileIO interface {
 	CreateRepoInitInfo(repositoryId int) error
 	GetRepositoryId() (int, error)
+	ReadFile(filename string) (string, error)
 	WriteToFile(filename string, content string) error
 	DeleteFile(filename string) error
 }
@@ -52,6 +53,19 @@ func NewFileIO() *FileIOImpl {
 	}
 }
 
+func (repoFileIO *FileIOImpl) ReadFile(filename string) (string, error) {
+	contentBytes, err := os.ReadFile(filename)
+
+	if err != nil {
+		return "", fmt.Errorf("error while reading the info file:\n%v", err)
+	}
+
+	content := strings.ReplaceAll(string(contentBytes), "\r", "")
+	content = strings.ReplaceAll(content, "\t", "  ")
+
+	return content, nil
+}
+
 func (repoFileIO *FileIOImpl) CreateRepoInitInfo(repositoryId int) error {
 	// permissions in Go are in octal notation apparently
 	// hence the 0 prefix
@@ -74,14 +88,11 @@ func (repoFileIO *FileIOImpl) CreateRepoInitInfo(repositoryId int) error {
 }
 
 func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
-	contentBytes, err := os.ReadFile(filepath.Join(repoFileIO.infoDir, repoFileIO.infoFile))
+	content, err := repoFileIO.ReadFile(filepath.Join(repoFileIO.infoDir, repoFileIO.infoFile))
 
 	if err != nil {
 		return -1, fmt.Errorf("error while reading the info file:\n%v", err)
 	}
-
-	content := strings.ReplaceAll(string(contentBytes), "\r", "")
-	content = strings.ReplaceAll(content, "\t", "  ")
 
 	for _, line := range strings.Split(content, "\n") {
 		if strings.HasPrefix(line, "repositoryId") {
