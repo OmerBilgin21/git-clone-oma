@@ -119,7 +119,7 @@ func (omaRepo *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename sq
 	}
 
 	if len(foundRepo) != 1 {
-		return nil, fmt.Errorf("could not find a repo for given file-repository ID combination, repository ID: %v, filename: %v", omaRepoId, filename.String)
+		return &OmaRepository{}, nil
 	}
 
 	return &foundRepo[0], err
