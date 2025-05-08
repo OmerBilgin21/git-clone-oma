@@ -33,8 +33,11 @@ plain:
 reinitialize:
 	make reset;make init
 
-test:
+test_all:
 	go test -v -count=1 ./...
+
+test_int:
+	go test -v -count=1 ./test/...
 
 build: $(BIN_DIR)/$(APP_NAME)-linux \
        $(BIN_DIR)/$(APP_NAME)-macos-arm64 \
