@@ -24,7 +24,7 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 		FileIORepository:         storage.NewFileIO(),
 	}
 
-	fileIngredients := walkDirsAndReadFiles()
+	fileIngredients := walkDirsAndReadFiles(&repoContainer)
 
 	parseArgs := internal.NewCLIArgsParser(args)
 	var cmd internal.Command
