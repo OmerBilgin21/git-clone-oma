@@ -22,9 +22,9 @@ func renderSideBySideDiff(oldColoured, newColoured, filename string) {
 	oldLines, newLines := strings.Split(oldColoured, "\n"), strings.Split(newColoured, "\n")
 	maxLines := max(len(oldLines), len(newLines))
 
-	fa := strings.Split(filename, "")
+	fa := []string{filename}
 	recursiveEqualizer(&fa)
-	headerName := strings.Join(fa, "")
+	headerName := fa[0]
 
 	fmt.Printf("\n%s%s%s\n", headerName, separator, headerName)
 
