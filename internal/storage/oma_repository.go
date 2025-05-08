@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	_ "database/sql"
 	"fmt"
-	"strconv"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -76,7 +75,7 @@ func (omaRepo *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepositor
 }
 
 func (omaRepo *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
-	query, _, err := sq.Select("repositories").Where(squirrel.Eq{
+	query, _, err := sq.Select("*").From("repositories").Where(squirrel.Eq{
 		"id": id,
 	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
 
@@ -149,7 +148,7 @@ func (omaRepo *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaR
 		qb = qb.Set("cached_text", data.CachedText.String)
 	}
 
-	qb = qb.Where(squirrel.Eq{"id": strconv.Itoa(id)}).Suffix("returning *")
+	qb = qb.Where(squirrel.Eq{"id": id}).Suffix("returning *")
 
 	query, args, err := qb.ToSql()
 
