@@ -7,31 +7,25 @@ import (
 	"log"
 	"oma/internal"
 	"oma/internal/storage"
+	"strings"
 )
 
-func createActions(ctx context.Context, repoContainer *storage.RepositoryContainer, actions []Action, versionId int, key storage.Keys) error {
-	for _, action := range actions {
-		actionToCreate := storage.VersionActions{
-			Dest:      action.to,
-			ActionKey: key,
-			VersionId: versionId,
-			Content:   action.content,
-		}
+func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context, ingredient FileIngredients, repoId int) error {
+	_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
+		FileName: sql.NullString{
+			Valid:  true,
+			String: ingredient.fileName,
+		},
+		CachedText: sql.NullString{
+			Valid:  true,
+			String: ingredient.content,
+		},
+		OmaRepoId: repoId,
+	})
 
-		if key == storage.MoveKey {
-			actionToCreate.Start = sql.Null[int]{
-				Valid: true,
-				V:     action.from,
-			}
-		}
-
-		_, err := repoContainer.VersionActionsRepository.Create(ctx, &actionToCreate)
-
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return fmt.Errorf("error while creating a new file cache:\n%w", err)
 	}
-
 	return nil
 }
 
@@ -41,6 +35,9 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	if err != nil {
 		return err
 	}
+
+	existingCommitted := 0
+	newCommitted := 0
 
 	for _, ingredient := range *fileIngredients {
 		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
@@ -53,34 +50,31 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}
 
 		if foundRepo.ID == 0 {
-			fmt.Printf("No previous version of the file, creating cache...")
-			_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-				FileName: sql.NullString{
-					Valid:  true,
-					String: ingredient.fileName,
-				},
-				CachedText: sql.NullString{
-					Valid:  true,
-					String: ingredient.content,
-				},
-				OmaRepoId: repoId,
-			})
-
-			if err != nil {
-				return fmt.Errorf("error while creating a new file cache:\n%w", err)
-			}
-
+			createCache(repoContainer, ctx, ingredient, repoId)
+			newCommitted++
 			continue
 		}
 
-		diffResult := GetDiff(foundRepo.CachedText.String, ingredient.content, false)
-		if diffResult.error != nil {
+		versionActions, err := getAllVersionActionsForRepo(ctx, repoContainer, foundRepo.ID)
+
+		if err != nil {
 			return err
 		}
 
-		if len(diffResult.additions) == 0 && len(diffResult.deletions) == 0 && len(diffResult.moves) == 0 {
+		var rebuilt string
+		RebuildDiff(strings.Split(foundRepo.CachedText.String, "\n"), versionActions, &rebuilt)
+
+		if rebuilt == ingredient.content {
 			continue
 		}
+
+		diffResult := GetDiff(rebuilt, ingredient.content, false)
+
+		if len(diffResult.Actions) == 0 {
+			continue
+		}
+
+		existingCommitted++
 
 		newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
 			RepositoryId: foundRepo.ID,
@@ -91,19 +85,16 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return err
 		}
 
-		if err := createActions(ctx, repoContainer, diffResult.additions, newVersion.ID, storage.AdditionKey); err != nil {
-			return err
-		}
-
-		if err := createActions(ctx, repoContainer, diffResult.deletions, newVersion.ID, storage.DeletionKey); err != nil {
-			return err
-		}
-
-		if err := createActions(ctx, repoContainer, diffResult.moves, newVersion.ID, storage.MoveKey); err != nil {
+		if err := createActions(ctx, repoContainer, diffResult.Actions, newVersion.ID); err != nil {
 			return err
 		}
 	}
 
-	log.Printf("diff committed successfully")
+	if existingCommitted == 0 && newCommitted == 0 {
+		log.Printf("no change!")
+		return nil
+	}
+
+	log.Printf("diff committed successfully.\n%v known file(s) and %v new file(s)", existingCommitted, newCommitted)
 	return nil
 }
