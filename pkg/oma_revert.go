@@ -43,6 +43,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			if err != nil {
 				return fmt.Errorf("error while deleting the file entry:\n%w", err)
 			}
+			continue
 		}
 
 		maxVersion, _ := repoContainer.VersionsRepository.GetMaxVersionNumberForRepo(ctx, repository.ID)
@@ -59,23 +60,30 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}
 
 		for _, version := range versions {
-			versionActions, err := repoContainer.VersionActionsRepository.GetByVersionId(ctx, version.ID)
-
+			err = repoContainer.VersionsRepository.Delete(ctx, version.ID)
 			if err != nil {
-				return fmt.Errorf("there are versions defined for this file: %v, but no version actions?\nError:%w", file.fileName, err)
+				return err
 			}
 
-			oldVersion := strings.Split(file.content, "\n")
-			var revertedFile string
-			RecursiveRebuildDiff(oldVersion, versionActions, &revertedFile, true)
-
-			err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
-
+			err = repoContainer.VersionActionsRepository.DeleteByVersionId(ctx, version.ID)
 			if err != nil {
-				return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
+				return err
 			}
+		}
 
-			repoContainer.VersionsRepository.Delete(ctx, version.ID)
+		versionActions, err := getAllVersionActionsForRepo(ctx, repoContainer, repository.ID)
+		if err != nil {
+			return err
+		}
+
+		oldVersion := strings.Split(file.content, "\n")
+		var revertedFile string
+		RebuildDiff(oldVersion, versionActions, &revertedFile)
+
+		err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
+
+		if err != nil {
+			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
 		}
 	}
 
