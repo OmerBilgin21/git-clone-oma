@@ -168,7 +168,7 @@ func (versions *VersionRepositoryImpl) GetAllByRepoId(ctx context.Context, repoI
 	err = versions.db.SelectContext(ctx, &foundVersions, query, args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("no versions found for repository ID: %v, error:\n%w", repoId, err)
+		return nil, fmt.Errorf("error while finding versions for repository ID: %v, error:\n%w", repoId, err)
 	}
 
 	return foundVersions, nil
