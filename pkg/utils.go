@@ -1,20 +1,63 @@
 package pkg
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"oma/internal/storage"
 	"os"
 	"slices"
 	"strings"
 )
 
-func walkDirsAndReadFiles() []FileIngredients {
+func createActions(ctx context.Context, repoContainer *storage.RepositoryContainer, actions []Action, versionId int) error {
+	for _, action := range actions {
+		actionToCreate := storage.VersionActions{
+			Pos:       action.Pos,
+			ActionKey: action.ActionType,
+			VersionId: versionId,
+			Content:   action.Content,
+		}
+
+		_, err := repoContainer.VersionActionsRepository.Create(ctx, &actionToCreate)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getAllVersionActionsForRepo(ctx context.Context, repoContainer *storage.RepositoryContainer, repositoryId int) ([]storage.VersionActions, error) {
+	allVersions, err := repoContainer.VersionsRepository.GetAllByRepoId(ctx, repositoryId)
+
+	if err != nil {
+		return []storage.VersionActions{}, fmt.Errorf("error while trying to get versions for repository: %v\nerror:\n%w", repositoryId, err)
+	}
+
+	var versionActions []storage.VersionActions
+	for _, version := range allVersions {
+		versionActionsOfVersion, err := repoContainer.VersionActionsRepository.GetByVersionId(ctx, version.ID)
+		if err != nil {
+			return []storage.VersionActions{}, fmt.Errorf("error while trying to get version actions for version: %v\nerror:\n%w", version.ID, err)
+		}
+		if len(versionActionsOfVersion) > 0 {
+			versionActions = append(versionActions, versionActionsOfVersion...)
+		}
+	}
+
+	return versionActions, nil
+}
+
+func walkDirsAndReadFiles(repoContainer *storage.RepositoryContainer) []FileIngredients {
 	currDir, err := os.Getwd()
 	check(err, true)
 
 	ignoreList := parseOmaIgnore()
 
 	var fileIngredients []FileIngredients
-	WalkDirs(currDir, &fileIngredients, []string{}, ignoreList)
+	WalkDirs(currDir, &fileIngredients, []string{}, ignoreList, repoContainer)
 
 	return fileIngredients
 }
