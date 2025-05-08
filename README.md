@@ -15,12 +15,13 @@ Current accomplished tasks:
  * Add a revert command with the ability to go back X versions
  * Maybe a log command to see the commit history?
  * Somewhat decent argument parsing and making use of flags for commands when needed
+ * fix the FIXMEs and do the TODOs, then done.
   
   
 Remaining tasks that I envisioned for this project are:
  * ~Change the file snapshop on each 5 commits as that'd increase the rebuild, commit operations
  and the possibility of doing history +-5 are are vastly less then within 5 operations.~ this is not a good idea with *possible* file deletions on reverts
- * fix the FIXMEs and do the TODOs, then done.
 
 Improvements that I'm aware of but won't do:
  * Concurrently build/render the diffs for the diff command
+ * Improve performance of the diff algorithm
