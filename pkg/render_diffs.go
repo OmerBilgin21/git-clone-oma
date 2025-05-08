@@ -52,12 +52,8 @@ func renderSideBySideDiff(oldColoured, newColoured, filename string) {
 func RenderDiffs(oldContent, newContent, filename string) error {
 	diffResult := GetDiff(oldContent, newContent, true)
 
-	if diffResult.error != nil {
-		return fmt.Errorf("diff view would be broken therefore it won't be shown for this file: %v\n", diffResult.error)
-	}
-
-	if len(diffResult.additions) > 0 || len(diffResult.deletions) > 0 || len(diffResult.moves) > 0 {
-		oldColoured, newColoured := ColourTheDiffs(diffResult.additions, diffResult.deletions, diffResult.moves, diffResult.normalizedOld, diffResult.normalizedNew)
+	if len(diffResult.Actions) > 0 {
+		oldColoured, newColoured := ColourTheDiffs(diffResult.Actions, diffResult.NormalizedOld, diffResult.NormalizedNew)
 		renderSideBySideDiff(oldColoured, newColoured, filename)
 	}
 
