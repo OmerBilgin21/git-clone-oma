@@ -1,13 +1,10 @@
 MIGRATE_CMD = go run cmd/db.go
 RUN_CMD = go run main.go
-APP_NAME = textdiff
+APP_NAME = oma
 VERSION  = v1.0.0
 BIN_DIR  = bin
 
-.PHONY: all clean
-
-migrate:
-	${MIGRATE_CMD} migrate
+.PHONY: all
 
 reset:
 	${MIGRATE_CMD} reset
@@ -27,17 +24,14 @@ revert:
 log:
 	${RUN_CMD} log
 
-plain:
-	${RUN_CMD}
-
 reinitialize:
 	make reset;make init
 
-test_all:
+test:
 	go test -v -count=1 ./...
 
-test_int:
-	go test -v -count=1 ./test/...
+cmp:
+	GOOS=linux GOARCH=amd64 go build -o $@ ./main.go
 
 build: $(BIN_DIR)/$(APP_NAME)-linux \
        $(BIN_DIR)/$(APP_NAME)-macos-arm64 \

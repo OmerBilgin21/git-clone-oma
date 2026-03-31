@@ -66,7 +66,7 @@ func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, er
 
 func (r *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename string, omaRepoId int) (*OmaRepository, error) {
 	var repo OmaRepository
-	result := r.db.WithContext(ctx).Where("filename = ? AND oma_repo_id = ?", filename, omaRepoId).First(&repo)
+	result := r.db.WithContext(ctx).Where("file_name = ? AND oma_repo_id = ?", filename, omaRepoId).First(&repo)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return &OmaRepository{}, nil
@@ -85,7 +85,7 @@ func (r *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepos
 func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error) {
 	updates := map[string]any{}
 	if data.FileName != nil {
-		updates["filename"] = *data.FileName
+		updates["file_name"] = *data.FileName
 	}
 	if data.CachedText != nil {
 		updates["cached_text"] = *data.CachedText

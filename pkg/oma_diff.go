@@ -2,11 +2,12 @@ package pkg
 
 import (
 	"context"
+	"oma/internal"
 	"oma/internal/storage"
 	"strings"
 )
 
-func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
+func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
 	if err != nil {
@@ -14,7 +15,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 	}
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.fileName, repoId)
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.FileName, repoId)
 
 		if err != nil {
 			return err
@@ -29,9 +30,9 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 			}
 
 			var rebuilt string
-			RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
+			internal.RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
 
-			if err := RenderDiffs(rebuilt, ingredient.content, ingredient.fileName); err != nil {
+			if err := internal.RenderDiffs(rebuilt, ingredient.Content, ingredient.FileName); err != nil {
 				return err
 			}
 		}

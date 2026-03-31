@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"oma/internal"
 	"oma/internal/storage"
 	"strings"
 )
 
-func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients) error {
+func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients) error {
 	var randomCreatedRepo *storage.OmaRepository
 	nextId, err := repoContainer.OmaRepository.GetNextOmaRepoId(ctx)
 
@@ -18,8 +19,8 @@ func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 
 	for i, entry := range *fileIngredients {
 		createdRepo, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-			FileName:   &entry.fileName,
-			CachedText: &entry.content,
+			FileName:   &entry.FileName,
+			CachedText: &entry.Content,
 			OmaRepoId:  nextId,
 		})
 

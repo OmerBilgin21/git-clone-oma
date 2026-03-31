@@ -3,14 +3,14 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"log"
+	"oma/internal"
 	"oma/internal/storage"
 	"os"
 	"slices"
 	"strings"
 )
 
-func createActions(ctx context.Context, repoContainer *storage.RepositoryContainer, actions []Action, versionId int) error {
+func createActions(ctx context.Context, repoContainer *storage.RepositoryContainer, actions []internal.Action, versionId int) error {
 	for _, action := range actions {
 		actionToCreate := storage.VersionActions{
 			Pos:       action.Pos,
@@ -50,14 +50,16 @@ func getAllVersionActionsForRepo(ctx context.Context, repoContainer *storage.Rep
 	return versionActions, nil
 }
 
-func walkDirsAndReadFiles(repoContainer *storage.RepositoryContainer) []FileIngredients {
+func walkDirsAndReadFiles(repoContainer *storage.RepositoryContainer) []internal.FileIngredients {
 	currDir, err := os.Getwd()
-	check(err, true)
+	if err != nil {
+		panic(err)
+	}
 
 	ignoreList := parseOmaIgnore()
 
-	var fileIngredients []FileIngredients
-	WalkDirs(currDir, &fileIngredients, []string{}, ignoreList, repoContainer)
+	var fileIngredients []internal.FileIngredients
+	internal.WalkDirs(currDir, &fileIngredients, []string{}, ignoreList, repoContainer)
 
 	return fileIngredients
 }
@@ -76,20 +78,13 @@ func purifyReadResult(lines []string) []string {
 
 func parseOmaIgnore() []string {
 	omaIgnoreBytes, err := os.ReadFile("./.omaignore")
-	check(err, false)
+	if err != nil {
+		panic(err)
+	}
 	omaIgnore := string(omaIgnoreBytes)
 
 	separatedArgs := purifyReadResult(strings.Split(omaIgnore, "\n"))
-	separatedArgs = append(separatedArgs, OMA_IGNORE_DEFAULTS...)
+	separatedArgs = append(separatedArgs, internal.OMA_IGNORE_DEFAULTS...)
 
 	return separatedArgs
-}
-
-func check(err error, fail bool) {
-	if err != nil {
-		if fail {
-			log.Fatal(err)
-		}
-		log.Printf("err: %v\n", err)
-	}
 }

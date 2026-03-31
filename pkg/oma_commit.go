@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context, ingredient FileIngredients, repoId int) error {
+func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context, ingredient internal.FileIngredients, repoId int) error {
 	_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-		FileName:   &ingredient.fileName,
-		CachedText: &ingredient.content,
+		FileName:   &ingredient.FileName,
+		CachedText: &ingredient.Content,
 		OmaRepoId:  repoId,
 	})
 
@@ -22,7 +22,7 @@ func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context
 	return nil
 }
 
-func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]FileIngredients, messageFlag internal.Flag) error {
+func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients, messageFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
 	if err != nil {
@@ -33,10 +33,10 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	newCommitted := 0
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.fileName, repoId)
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.FileName, repoId)
 
 		if err != nil {
-			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.fileName, err)
+			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.FileName, err)
 		}
 
 		if foundRepo.ID == 0 {
@@ -52,13 +52,13 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}
 
 		var rebuilt string
-		RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
+		internal.RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
 
-		if rebuilt == ingredient.content {
+		if rebuilt == ingredient.Content {
 			continue
 		}
 
-		diffResult := GetDiff(rebuilt, ingredient.content, false)
+		diffResult := internal.GetDiff(rebuilt, ingredient.Content, false)
 
 		if len(diffResult.Actions) == 0 {
 			continue

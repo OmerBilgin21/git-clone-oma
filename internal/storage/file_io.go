@@ -94,7 +94,7 @@ func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
 		return -1, fmt.Errorf("error while reading the info file:\n%v", err)
 	}
 
-	for _, line := range strings.Split(content, "\n") {
+	for line := range strings.SplitSeq(content, "\n") {
 		if strings.HasPrefix(line, "repositoryId") {
 			repoIdString := strings.Split(line, "=")[1]
 			repoId, err := strconv.ParseInt(repoIdString, 10, 64)

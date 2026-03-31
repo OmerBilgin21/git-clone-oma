@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]FileIngredients, backFlag internal.Flag) error {
+func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]internal.FileIngredients, backFlag internal.Flag) error {
 	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
 
 	if err != nil {
@@ -24,16 +24,16 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	}
 
 	for _, file := range *fileIngrediends {
-		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, file.fileName, repoId)
+		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, file.FileName, repoId)
 
 		if err != nil {
-			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.fileName, err)
+			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.FileName, err)
 		}
 
 		if repository.ID == 0 {
 			// filename is an absolute path so this should work?
-			if err := repoContainer.FileIORepository.DeleteFile(file.fileName); err != nil {
-				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.fileName, backAmount)
+			if err := repoContainer.FileIORepository.DeleteFile(file.FileName); err != nil {
+				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.FileName, backAmount)
 			}
 			err = repoContainer.OmaRepository.Delete(ctx, repository.ID)
 			if err != nil {
@@ -72,14 +72,14 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return err
 		}
 
-		oldVersion := strings.Split(file.content, "\n")
+		oldVersion := strings.Split(file.Content, "\n")
 		var revertedFile string
-		RebuildDiff(oldVersion, versionActions, &revertedFile)
+		internal.RebuildDiff(oldVersion, versionActions, &revertedFile)
 
-		err = repoContainer.FileIORepository.WriteToFile(file.fileName, revertedFile)
+		err = repoContainer.FileIORepository.WriteToFile(file.FileName, revertedFile)
 
 		if err != nil {
-			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.fileName, err)
+			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.FileName, err)
 		}
 	}
 

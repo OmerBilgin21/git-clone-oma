@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 import (
 	"oma/internal/storage"

@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 import (
 	"oma/internal/storage"
@@ -11,8 +11,8 @@ import (
 var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore", "node_modules"}
 
 type FileIngredients struct {
-	fileName string
-	content  string
+	FileName string
+	Content  string
 }
 
 // at the time I implemented this I didn't know
@@ -20,10 +20,15 @@ type FileIngredients struct {
 // but hey, it works, so no need to change it
 func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps []string, ignoreList []string, repoContainer *storage.RepositoryContainer) bool {
 	dirIngredientList, err := os.ReadDir(curr)
-	check(err, true)
+	if err != nil {
+		panic(err)
+	}
 
 	rootDirPath, err := os.Getwd()
-	check(err, true)
+	if err != nil {
+
+		panic(err)
+	}
 	rootDir := filepath.Base(rootDirPath)
 	currDirName := filepath.Base(curr)
 
@@ -66,11 +71,13 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 
 		fileNameToProcess := filepath.Join(curr, fileEntry.Name())
 		content, err := repoContainer.FileIORepository.ReadFile(fileNameToProcess)
-		check(err, false)
+		if err != nil {
+			panic(err)
+		}
 
 		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredients{
-			fileName: fileNameToProcess,
-			content:  content,
+			FileName: fileNameToProcess,
+			Content:  content,
 		})
 
 		processedSteps = append(processedSteps, fileEntry.Name())

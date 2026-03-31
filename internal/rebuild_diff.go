@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 import (
 	"oma/internal/storage"
@@ -10,9 +10,10 @@ func RebuildDiff(oldArr []string, versionActions []storage.VersionActions, newVe
 	if len(versionActions) > 0 {
 		action := versionActions[0]
 
-		if action.ActionKey == storage.DeletionKey {
+		switch action.ActionKey {
+		case storage.DeletionKey:
 			oldArr = slices.Delete(oldArr, action.Pos, action.Pos+1)
-		} else if action.ActionKey == storage.AdditionKey {
+		case storage.AdditionKey:
 			oldArr = slices.Insert(oldArr, action.Pos, action.Content)
 		}
 

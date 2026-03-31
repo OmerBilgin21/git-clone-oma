@@ -1,8 +1,8 @@
 package text
 
 import (
+	"oma/internal"
 	"oma/internal/storage"
-	"oma/pkg"
 	"reflect"
 	"strings"
 	"testing"
@@ -104,7 +104,7 @@ func TestText(test *testing.T) {
 				t.FailNow()
 			}
 
-			diffResult := pkg.GetDiff(oldStr, newStr, false)
+			diffResult := internal.GetDiff(oldStr, newStr, false)
 
 			if (!tCase.expectActions && len(diffResult.Actions) != 0) || (tCase.expectActions && len(diffResult.Actions) == 0) {
 				t.Logf("unexpected action amount: %+v", diffResult.Actions)
@@ -125,7 +125,7 @@ func TestText(test *testing.T) {
 			}
 
 			var rebuilt string
-			pkg.RebuildDiff(strings.Split(oldStr, "\n"), versionActions, &rebuilt)
+			internal.RebuildDiff(strings.Split(oldStr, "\n"), versionActions, &rebuilt)
 
 			if !reflect.DeepEqual(rebuilt, newStr) {
 				t.Logf("rebuilt string and newStr are not equal for case: %v", tCase.name)
