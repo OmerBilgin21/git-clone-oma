@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"oma/internal"
@@ -12,15 +11,9 @@ import (
 
 func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context, ingredient FileIngredients, repoId int) error {
 	_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-		FileName: sql.NullString{
-			Valid:  true,
-			String: ingredient.fileName,
-		},
-		CachedText: sql.NullString{
-			Valid:  true,
-			String: ingredient.content,
-		},
-		OmaRepoId: repoId,
+		FileName:   &ingredient.fileName,
+		CachedText: &ingredient.content,
+		OmaRepoId:  repoId,
 	})
 
 	if err != nil {
@@ -40,10 +33,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	newCommitted := 0
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
-			String: ingredient.fileName,
-			Valid:  true,
-		}, repoId)
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.fileName, repoId)
 
 		if err != nil {
 			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.fileName, err)
@@ -62,7 +52,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		}
 
 		var rebuilt string
-		RebuildDiff(strings.Split(foundRepo.CachedText.String, "\n"), versionActions, &rebuilt)
+		RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
 
 		if rebuilt == ingredient.content {
 			continue

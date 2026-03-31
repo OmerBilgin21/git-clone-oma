@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"oma/internal"
@@ -25,10 +24,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	}
 
 	for _, file := range *fileIngrediends {
-		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
-			Valid:  true,
-			String: file.fileName,
-		}, repoId)
+		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, file.fileName, repoId)
 
 		if err != nil {
 			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.fileName, err)

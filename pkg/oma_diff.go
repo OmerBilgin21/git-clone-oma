@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"database/sql"
 	"oma/internal/storage"
 	"strings"
 )
@@ -15,10 +14,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 	}
 
 	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, sql.NullString{
-			String: ingredient.fileName,
-			Valid:  true,
-		}, repoId)
+		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.fileName, repoId)
 
 		if err != nil {
 			return err
@@ -33,7 +29,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 			}
 
 			var rebuilt string
-			RebuildDiff(strings.Split(foundRepo.CachedText.String, "\n"), versionActions, &rebuilt)
+			RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
 
 			if err := RenderDiffs(rebuilt, ingredient.content, ingredient.fileName); err != nil {
 				return err

@@ -67,19 +67,19 @@ func (repoFileIO *FileIOImpl) ReadFile(filename string) (string, error) {
 }
 
 func (repoFileIO *FileIOImpl) CreateRepoInitInfo(repositoryId int) error {
-	// permissions in Go are in octal notation apparently
-	// hence the 0 prefix
-	err := os.Mkdir(".oma", 0755)
-	if err != nil {
-		return fmt.Errorf("error while creating repository info file parent:\n%v", err)
+
+	infoFilePath := filepath.Join(repoFileIO.currentDirectory, repoFileIO.infoDir, repoFileIO.infoFile)
+
+	if _, err := os.Stat(infoFilePath); err == nil {
+		return fmt.Errorf("repository already exists")
 	}
 
-	file, err := os.Create(filepath.Join(repoFileIO.currentDirectory, repoFileIO.infoDir, repoFileIO.infoFile))
-	defer file.Close()
+	file, err := os.Create(infoFilePath)
 
 	if err != nil {
 		return fmt.Errorf("error while creating repository info file:\n%v", err)
 	}
+	defer file.Close()
 
 	repoIdInBytes := []byte("repositoryId=" + strconv.Itoa(repositoryId))
 	file.Write(repoIdInBytes)
@@ -116,6 +116,8 @@ func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error
 		return nil
 	}
 
+	// permissions in Go are in octal notation apparently
+	// hence the 0 prefix
 	err := os.MkdirAll(filename, 0755)
 
 	if err != nil {
@@ -123,11 +125,12 @@ func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error
 	}
 
 	file, err := os.Create(filename)
-	defer file.Close()
 
 	if err != nil {
 		return fmt.Errorf("error while creating file:\n%v\nerror:\n%w", filename, err)
 	}
+
+	defer file.Close()
 
 	contentInBytes := []byte(content)
 	file.Write(contentInBytes)

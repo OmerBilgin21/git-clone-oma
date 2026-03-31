@@ -8,11 +8,17 @@ import (
 	_ "strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
-func Dispatch(args []string, dbIns *sqlx.DB) {
-	defer dbIns.Close()
+func Dispatch(args []string, dbIns *gorm.DB) {
+	sqlDB, err := dbIns.DB()
+	if err != nil {
+		panic(err)
+	}
+	defer sqlDB.Close()
+
+	dbIns.AutoMigrate(&storage.OmaRepository{}, &storage.Versions{}, &storage.VersionActions{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -28,7 +34,7 @@ func Dispatch(args []string, dbIns *sqlx.DB) {
 
 	parseArgs := internal.NewCLIArgsParser(args)
 	var cmd internal.Command
-	err := parseArgs.GetCommand(&cmd)
+	err = parseArgs.GetCommand(&cmd)
 
 	if err != nil {
 		log.Fatalf("error while parsing the commands:\n%v", err)

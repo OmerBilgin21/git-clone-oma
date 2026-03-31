@@ -29,7 +29,7 @@ func renderSideBySideDiff(oldColoured, newColoured, filename string) {
 	fmt.Printf("\n%s%s%s\n", headerName, separator, headerName)
 
 	columnSeparator := strings.Repeat("-", Width*2)
-	fmt.Printf(columnSeparator + "\n")
+	fmt.Printf("%s\n", columnSeparator)
 
 	for i := range maxLines {
 		oldLine, newLine := oldLines[i], newLines[i]

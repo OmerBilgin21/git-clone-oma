@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"oma/internal/storage"
@@ -19,15 +18,9 @@ func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 
 	for i, entry := range *fileIngredients {
 		createdRepo, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
-			FileName: sql.NullString{
-				String: entry.fileName,
-				Valid:  true,
-			},
-			CachedText: sql.NullString{
-				String: entry.content,
-				Valid:  true,
-			},
-			OmaRepoId: nextId,
+			FileName:   &entry.fileName,
+			CachedText: &entry.content,
+			OmaRepoId:  nextId,
 		})
 
 		if err != nil {

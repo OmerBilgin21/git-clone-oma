@@ -1,27 +1,21 @@
 package internal
 
 import (
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
-	"log"
 	"os"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 )
 
-func GetDb() *sqlx.DB {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("env vars could not load: %v", err)
+func GetDb() *gorm.DB {
+	if err := os.MkdirAll(".oma", 0755); err != nil {
+		panic(err)
 	}
 
-	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+	db, err := gorm.Open(sqlite.Open("./.oma/oma.db"), &gorm.Config{})
 
 	if err != nil {
-		log.Fatalf("error while connecting to db: %v", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("something went wrong while pinging the DB: %v", err)
+		panic(err)
 	}
 
 	return db

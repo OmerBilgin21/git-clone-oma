@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// TODO: refactor with stdlib/flag
+
 type Command string
 
 const (

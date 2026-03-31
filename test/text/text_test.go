@@ -1,13 +1,14 @@
 package text
 
 import (
-	"database/sql"
 	"oma/internal/storage"
 	"oma/pkg"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func TestText(test *testing.T) {
@@ -113,11 +114,9 @@ func TestText(test *testing.T) {
 			versionActions := []storage.VersionActions{}
 			for i, action := range diffResult.Actions {
 				versionActions = append(versionActions, storage.VersionActions{
-					ID:        i + 1,
+					ID:        uint(i + 1),
 					CreatedAt: time.Now(),
-					DeletedAt: sql.NullTime{
-						Valid: false,
-					},
+					DeletedAt: gorm.DeletedAt{Valid: false},
 					VersionId: 1,
 					ActionKey: action.ActionType,
 					Pos:       action.Pos,

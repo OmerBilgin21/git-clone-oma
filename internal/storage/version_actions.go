@@ -2,19 +2,27 @@ package storage
 
 import (
 	"context"
-	"fmt"
+	"time"
 
-	"github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
-func versionActionsToMap(data *VersionActions) map[string]any {
-	return map[string]any{
-		"pos":        data.Pos,
-		"action_key": data.ActionKey,
-		"version_id": data.VersionId,
-		"content":    data.Content,
-	}
+type Keys string
+
+const (
+	AdditionKey Keys = "addition"
+	DeletionKey Keys = "deletion"
+)
+
+type VersionActions struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `gorm:"not null" json:"createdAt"`
+	UpdatedAt time.Time      `gorm:"not null" json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt"`
+	Pos       int            `gorm:"not null" json:"pos"`
+	ActionKey Keys           `gorm:"not null" json:"actionKey"`
+	VersionId int            `gorm:"not null" json:"versionId"`
+	Content   string         `gorm:"not null" json:"content"`
 }
 
 type VersionActionsRepository interface {
@@ -24,49 +32,24 @@ type VersionActionsRepository interface {
 }
 
 type VersionActionsRepositoryImpl struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewVersionActionsRepository(db *sqlx.DB) *VersionActionsRepositoryImpl {
+func NewVersionActionsRepository(db *gorm.DB) *VersionActionsRepositoryImpl {
 	return &VersionActionsRepositoryImpl{db: db}
 }
 
-func (versionActions *VersionActionsRepositoryImpl) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
-	query, args, err := sq.Insert("version_actions").SetMap(versionActionsToMap(data)).Suffix("returning *").ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("error while generating the create version actions query:\n%w", err)
-	}
-
-	createdRepo := &VersionActions{}
-	err = versionActions.db.GetContext(ctx, createdRepo, query, args...)
-
-	return createdRepo, err
+func (r *VersionActionsRepositoryImpl) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
+	result := r.db.WithContext(ctx).Create(data)
+	return data, result.Error
 }
 
-func (versionActions *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
-	query, args, err := sq.Select("*").From("version_actions").Where(squirrel.Eq{
-		"version_id": versionId,
-	}).Where(squirrel.Expr("deleted_at IS NULL")).ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("error while generating the GetByVersionId query:\n%w", err)
-	}
-
-	foundVersionActions := []VersionActions{}
-
-	err = versionActions.db.SelectContext(ctx, &foundVersionActions, query, args...)
-
-	if err != nil {
-		return nil, fmt.Errorf("error while finding version actions for version: %v\nerror:\n%w", versionId, err)
-	}
-
-	return foundVersionActions, err
+func (r *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
+	var actions []VersionActions
+	result := r.db.WithContext(ctx).Where("version_id = ?", versionId).Find(&actions)
+	return actions, result.Error
 }
 
-func (versionActions *VersionActionsRepositoryImpl) DeleteByVersionId(ctx context.Context, versionId int) error {
-	query := `update version_actions set deleted_at = now() where version_id = $1`
-	_, err := versionActions.db.ExecContext(ctx, query, versionId)
-
-	return err
+func (r *VersionActionsRepositoryImpl) DeleteByVersionId(ctx context.Context, versionId int) error {
+	return r.db.WithContext(ctx).Where("version_id = ?", versionId).Delete(&VersionActions{}).Error
 }
