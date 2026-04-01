@@ -4,7 +4,7 @@ APP_NAME = oma
 VERSION  = v1.0.0
 BIN_DIR  = bin
 
-.PHONY: all
+.PHONY: .all .diff .commit .log .test .cmp
 
 reset:
 	${MIGRATE_CMD} reset

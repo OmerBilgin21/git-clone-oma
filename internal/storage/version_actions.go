@@ -25,12 +25,6 @@ type VersionActions struct {
 	Content   string         `gorm:"not null" json:"content"`
 }
 
-type VersionActionsRepository interface {
-	Create(ctx context.Context, data *VersionActions) (*VersionActions, error)
-	GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error)
-	DeleteByVersionId(ctx context.Context, versionId int) error
-}
-
 type VersionActionsRepositoryImpl struct {
 	db *gorm.DB
 }

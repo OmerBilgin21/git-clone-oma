@@ -3,19 +3,18 @@ package pkg
 import (
 	"context"
 	"oma/internal"
-	"oma/internal/storage"
 	"strings"
 )
 
-func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients) error {
-	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+func (d *DispatchCommand) GitDiff(ctx context.Context) error {
+	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {
 		return err
 	}
 
-	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.FileName, repoId)
+	for _, ingredient := range d.fileIngredients {
+		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, repoId)
 
 		if err != nil {
 			return err
@@ -24,7 +23,7 @@ func GitDiff(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 		if foundRepo.ID == 0 {
 			continue
 		} else {
-			versionActions, err := getAllVersionActionsForRepo(ctx, repoContainer, foundRepo.ID)
+			versionActions, err := d.GetAllVersionActionsForRepo(ctx, foundRepo.ID)
 			if err != nil {
 				return err
 			}

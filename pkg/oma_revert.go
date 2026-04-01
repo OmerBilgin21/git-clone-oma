@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"log"
 	"oma/internal"
-	"oma/internal/storage"
 	"strconv"
 	"strings"
 )
 
-func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngrediends *[]internal.FileIngredients, backFlag internal.Flag) error {
-	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+func (d *DispatchCommand) GitRevert(ctx context.Context, backFlag internal.Flag) error {
+	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {
 		return err
@@ -23,8 +22,8 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		return fmt.Errorf("back flag's value must be an integer")
 	}
 
-	for _, file := range *fileIngrediends {
-		repository, err := repoContainer.OmaRepository.GetByFilename(ctx, file.FileName, repoId)
+	for _, file := range d.fileIngredients {
+		repository, err := d.omaRepo.GetByFilename(ctx, file.FileName, repoId)
 
 		if err != nil {
 			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.FileName, err)
@@ -32,42 +31,42 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 
 		if repository.ID == 0 {
 			// filename is an absolute path so this should work?
-			if err := repoContainer.FileIORepository.DeleteFile(file.FileName); err != nil {
+			if err := d.fileIO.DeleteFile(file.FileName); err != nil {
 				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.FileName, backAmount)
 			}
-			err = repoContainer.OmaRepository.Delete(ctx, repository.ID)
+			err = d.omaRepo.Delete(ctx, repository.ID)
 			if err != nil {
 				return fmt.Errorf("error while deleting the file entry:\n%w", err)
 			}
 			continue
 		}
 
-		maxVersion, _ := repoContainer.VersionsRepository.GetMaxVersionNumberForRepo(ctx, repository.ID)
+		maxVersion, _ := d.versionsRepo.GetMaxVersionNumberForRepo(ctx, repository.ID)
 
 		// means that this file did not have that many commits yet
 		if maxVersion < backAmount {
 			continue
 		}
 
-		versions, err := repoContainer.VersionsRepository.GetLatestXByRepoId(ctx, repository.ID, backAmount)
+		versions, err := d.versionsRepo.GetLatestXByRepoId(ctx, repository.ID, backAmount)
 
 		if err != nil {
 			return fmt.Errorf("error while retrieving versions:\n%w", err)
 		}
 
 		for _, version := range versions {
-			err = repoContainer.VersionsRepository.Delete(ctx, version.ID)
+			err = d.versionsRepo.Delete(ctx, version.ID)
 			if err != nil {
 				return err
 			}
 
-			err = repoContainer.VersionActionsRepository.DeleteByVersionId(ctx, version.ID)
+			err = d.versionActionsRepo.DeleteByVersionId(ctx, version.ID)
 			if err != nil {
 				return err
 			}
 		}
 
-		versionActions, err := getAllVersionActionsForRepo(ctx, repoContainer, repository.ID)
+		versionActions, err := d.GetAllVersionActionsForRepo(ctx, repository.ID)
 		if err != nil {
 			return err
 		}
@@ -76,7 +75,7 @@ func GitRevert(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 		var revertedFile string
 		internal.RebuildDiff(oldVersion, versionActions, &revertedFile)
 
-		err = repoContainer.FileIORepository.WriteToFile(file.FileName, revertedFile)
+		err = d.fileIO.WriteToFile(file.FileName, revertedFile)
 
 		if err != nil {
 			return fmt.Errorf("error while writing the reverted file: %v, error:\n%w", file.FileName, err)

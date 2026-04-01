@@ -10,15 +10,15 @@ import (
 
 var OMA_IGNORE_DEFAULTS = []string{".git", ".oma", ".omaignore", ".gitignore", "node_modules"}
 
-type FileIngredients struct {
+type FileIngredient struct {
 	FileName string
 	Content  string
 }
 
 // at the time I implemented this I didn't know
 // path/filepath.WalkDir existed :D
-// but hey, it works, so no need to change it
-func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps []string, ignoreList []string, repoContainer *storage.RepositoryContainer) bool {
+// but hey, it works
+func WalkDirs(curr string, fileIngredientsPtr []FileIngredient, processedSteps []string, ignoreList []string, fileIO *storage.FileIOImpl) bool {
 	dirIngredientList, err := os.ReadDir(curr)
 	if err != nil {
 		panic(err)
@@ -35,7 +35,7 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 	// we have come to an end node on our directory tree and it is not the root node, going one step back
 	if rootDir != currDirName && slices.Contains(processedSteps, currDirName) {
 		processedSteps = append(processedSteps, currDirName)
-		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList, repoContainer) {
+		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList, fileIO) {
 			return true
 		}
 	} else if currDirName == rootDir && len(processedSteps) > 0 {
@@ -64,18 +64,18 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 		// We faced a directory that we have not been inside: %v, going in...
 		if fileEntry.IsDir() {
 			curr = filepath.Join(curr, fileEntry.Name())
-			if WalkDirs(curr, fileIngredientsPtr, processedSteps, ignoreList, repoContainer) {
+			if WalkDirs(curr, fileIngredientsPtr, processedSteps, ignoreList, fileIO) {
 				return true
 			}
 		}
 
 		fileNameToProcess := filepath.Join(curr, fileEntry.Name())
-		content, err := repoContainer.FileIORepository.ReadFile(fileNameToProcess)
+		content, err := fileIO.ReadFile(fileNameToProcess)
 		if err != nil {
 			panic(err)
 		}
 
-		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredients{
+		fileIngredientsPtr = append(fileIngredientsPtr, FileIngredient{
 			FileName: fileNameToProcess,
 			Content:  content,
 		})
@@ -87,7 +87,7 @@ func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredients, processedSteps
 	// going back
 	if currDirName != rootDir {
 		processedSteps = append(processedSteps, currDirName)
-		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList, repoContainer) {
+		if WalkDirs(filepath.Join(curr, "../"), fileIngredientsPtr, processedSteps, ignoreList, fileIO) {
 			return true
 		}
 	}

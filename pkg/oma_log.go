@@ -3,22 +3,21 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"oma/internal/storage"
 )
 
-func GitLog(ctx context.Context, repoContainer *storage.RepositoryContainer) error {
-	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+func (d *DispatchCommand) GitLog(ctx context.Context) error {
+	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {
 		return err
 	}
-	repositories, err := repoContainer.OmaRepository.GetAllByRepoId(ctx, repoId)
+	repositories, err := d.omaRepo.GetAllByRepoId(ctx, repoId)
 	if err != nil {
 		return fmt.Errorf("no file has been found in this repository")
 	}
 
 	for _, repo := range repositories {
-		versions, err := repoContainer.VersionsRepository.GetAllDistinctByRepoId(ctx, repo.ID)
+		versions, err := d.versionsRepo.GetAllDistinctByRepoId(ctx, repo.ID)
 
 		if err != nil {
 			continue

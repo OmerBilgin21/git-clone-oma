@@ -9,8 +9,27 @@ import (
 	"strings"
 )
 
-func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context, ingredient internal.FileIngredients, repoId int) error {
-	_, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
+func createActions(ctx context.Context, versionActionsRepo *storage.VersionActionsRepositoryImpl, actions []internal.Action, versionId int) error {
+	for _, action := range actions {
+		actionToCreate := storage.VersionActions{
+			Pos:       action.Pos,
+			ActionKey: action.ActionType,
+			VersionId: versionId,
+			Content:   action.Content,
+		}
+
+		_, err := versionActionsRepo.Create(ctx, &actionToCreate)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createCache(ctx context.Context, omaRepo *storage.OmaRepositoryImpl, ingredient internal.FileIngredient, repoId int) error {
+	_, err := omaRepo.Create(ctx, &storage.OmaRepository{
 		FileName:   &ingredient.FileName,
 		CachedText: &ingredient.Content,
 		OmaRepoId:  repoId,
@@ -22,8 +41,8 @@ func createCache(repoContainer *storage.RepositoryContainer, ctx context.Context
 	return nil
 }
 
-func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients, messageFlag internal.Flag) error {
-	repoId, err := repoContainer.FileIORepository.GetRepositoryId()
+func (d *DispatchCommand) GitCommit(ctx context.Context, messageFlag internal.Flag) error {
+	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {
 		return err
@@ -32,20 +51,20 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 	existingCommitted := 0
 	newCommitted := 0
 
-	for _, ingredient := range *fileIngredients {
-		foundRepo, err := repoContainer.OmaRepository.GetByFilename(ctx, ingredient.FileName, repoId)
+	for _, ingredient := range d.fileIngredients {
+		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, repoId)
 
 		if err != nil {
 			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.FileName, err)
 		}
 
 		if foundRepo.ID == 0 {
-			createCache(repoContainer, ctx, ingredient, repoId)
+			createCache(ctx, d.omaRepo, ingredient, repoId)
 			newCommitted++
 			continue
 		}
 
-		versionActions, err := getAllVersionActionsForRepo(ctx, repoContainer, foundRepo.ID)
+		versionActions, err := d.GetAllVersionActionsForRepo(ctx, foundRepo.ID)
 
 		if err != nil {
 			return err
@@ -66,7 +85,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 
 		existingCommitted++
 
-		newVersion, err := repoContainer.VersionsRepository.Create(ctx, &storage.Versions{
+		newVersion, err := d.versionsRepo.Create(ctx, &storage.Versions{
 			RepositoryId: foundRepo.ID,
 			Message:      messageFlag.Value,
 		})
@@ -75,7 +94,7 @@ func GitCommit(ctx context.Context, repoContainer *storage.RepositoryContainer, 
 			return err
 		}
 
-		if err := createActions(ctx, repoContainer, diffResult.Actions, newVersion.ID); err != nil {
+		if err := createActions(ctx, d.versionActionsRepo, diffResult.Actions, newVersion.ID); err != nil {
 			return err
 		}
 	}

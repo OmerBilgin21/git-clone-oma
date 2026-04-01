@@ -15,14 +15,6 @@ const (
 	Prod Env = "PRODUCTION"
 )
 
-type FileIO interface {
-	CreateRepoInitInfo(repositoryId int) error
-	GetRepositoryId() (int, error)
-	ReadFile(filename string) (string, error)
-	WriteToFile(filename string, content string) error
-	DeleteFile(filename string) error
-}
-
 type FileIOImpl struct {
 	currentDirectory string
 	infoFile         string

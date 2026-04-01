@@ -18,16 +18,6 @@ type Versions struct {
 	Message      string         `gorm:"not null" json:"message"`
 }
 
-type VersionRepository interface {
-	Create(ctx context.Context, data *Versions) (*Versions, error)
-	Get(ctx context.Context, id int) (*Versions, error)
-	Delete(ctx context.Context, id int) error
-	GetLatestXByRepoId(ctx context.Context, repoId, x int) ([]Versions, error)
-	GetMaxVersionNumberForRepo(ctx context.Context, repoId int) (int, error)
-	GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error)
-	GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error)
-}
-
 type VersionRepositoryImpl struct {
 	db *gorm.DB
 }

@@ -4,21 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"oma/internal"
 	"oma/internal/storage"
 	"strings"
 )
 
-func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fileIngredients *[]internal.FileIngredients) error {
+func (d *DispatchCommand) GitInit(ctx context.Context) error {
 	var randomCreatedRepo *storage.OmaRepository
-	nextId, err := repoContainer.OmaRepository.GetNextOmaRepoId(ctx)
+	nextId, err := d.omaRepo.GetNextOmaRepoId(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	for i, entry := range *fileIngredients {
-		createdRepo, err := repoContainer.OmaRepository.Create(ctx, &storage.OmaRepository{
+	for i, entry := range d.fileIngredients {
+		createdRepo, err := d.omaRepo.Create(ctx, &storage.OmaRepository{
 			FileName:   &entry.FileName,
 			CachedText: &entry.Content,
 			OmaRepoId:  nextId,
@@ -34,7 +33,7 @@ func GitInit(ctx context.Context, repoContainer *storage.RepositoryContainer, fi
 
 	}
 
-	err = repoContainer.FileIORepository.CreateRepoInitInfo(randomCreatedRepo.OmaRepoId)
+	err = d.fileIO.CreateRepoInitInfo(randomCreatedRepo.OmaRepoId)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "exists") {

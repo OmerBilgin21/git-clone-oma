@@ -21,17 +21,6 @@ type OmaRepository struct {
 
 func (OmaRepository) TableName() string { return "repositories" }
 
-type OmaRepoRepository interface {
-	GetNextOmaRepoId(ctx context.Context) (int, error)
-	Create(ctx context.Context, data *OmaRepository) (*OmaRepository, error)
-	Get(ctx context.Context, id int) (*OmaRepository, error)
-	GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error)
-	GetByFilename(ctx context.Context, filename string, omaRepoId int) (*OmaRepository, error)
-	Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error)
-	Delete(ctx context.Context, id int) error
-	GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error)
-}
-
 type OmaRepositoryImpl struct {
 	db *gorm.DB
 }
