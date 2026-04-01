@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (d *DispatchCommand) GitLog(ctx context.Context) error {
+func (d *OmaVC) OmaLog(ctx context.Context) error {
 	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {

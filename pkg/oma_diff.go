@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (d *DispatchCommand) GitDiff(ctx context.Context) error {
+func (d *OmaVC) OmaDiff(ctx context.Context) error {
 	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {

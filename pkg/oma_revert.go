@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (d *DispatchCommand) GitRevert(ctx context.Context, backFlag internal.Flag) error {
+func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {

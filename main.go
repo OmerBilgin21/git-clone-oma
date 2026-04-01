@@ -24,5 +24,5 @@ func main() {
 		fileIO,
 	)
 
-	dispatch.Dispatch(cliArgs, db)
+	dispatch.RunCMD(cliArgs, db)
 }

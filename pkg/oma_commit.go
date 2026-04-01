@@ -41,7 +41,7 @@ func createCache(ctx context.Context, omaRepo *storage.OmaRepositoryImpl, ingred
 	return nil
 }
 
-func (d *DispatchCommand) GitCommit(ctx context.Context, messageFlag internal.Flag) error {
+func (d *OmaVC) OmaCommit(ctx context.Context, messageFlag internal.Flag) error {
 	repoId, err := d.fileIO.GetRepositoryId()
 
 	if err != nil {

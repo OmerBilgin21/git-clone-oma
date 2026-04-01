@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (d *DispatchCommand) GitInit(ctx context.Context) error {
+func (d *OmaVC) OmaInit(ctx context.Context) error {
 	var randomCreatedRepo *storage.OmaRepository
 	nextId, err := d.omaRepo.GetNextOmaRepoId(ctx)
 

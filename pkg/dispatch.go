@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type DispatchCommand struct {
+type OmaVC struct {
 	db                 *gorm.DB
 	omaRepo            *storage.OmaRepositoryImpl
 	versionsRepo       *storage.VersionRepository
@@ -25,8 +25,8 @@ type DispatchCommand struct {
 	fileIngredients []internal.FileIngredient
 }
 
-func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepository, versionActionsRepo *storage.VersionActionsRepository, fileIO *storage.FileIOImpl) *DispatchCommand {
-	return &DispatchCommand{
+func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepository, versionActionsRepo *storage.VersionActionsRepository, fileIO *storage.FileIOImpl) *OmaVC {
+	return &OmaVC{
 		db:                 db,
 		omaRepo:            omaRepo,
 		versionsRepo:       versionRepo,
@@ -35,7 +35,7 @@ func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, version
 	}
 }
 
-func (d *DispatchCommand) Dispatch(args []string, dbIns *gorm.DB) {
+func (d *OmaVC) RunCMD(args []string, dbIns *gorm.DB) {
 	sqlDB, err := dbIns.DB()
 	if err != nil {
 		panic(err)
@@ -61,7 +61,7 @@ func (d *DispatchCommand) Dispatch(args []string, dbIns *gorm.DB) {
 
 	switch cmd {
 	case internal.Init:
-		if err := d.GitInit(ctx); err != nil {
+		if err := d.OmaInit(ctx); err != nil {
 			log.Fatalf("error while initialising repository:\n%v", err)
 		}
 
@@ -70,12 +70,12 @@ func (d *DispatchCommand) Dispatch(args []string, dbIns *gorm.DB) {
 		if err != nil {
 			log.Fatalf("%v\n", err)
 		}
-		if err := d.GitCommit(ctx, messageFlag); err != nil {
+		if err := d.OmaCommit(ctx, messageFlag); err != nil {
 			log.Fatalf("error while committing your changes:\n%v", err)
 		}
 
 	case internal.Diff:
-		if err := d.GitDiff(ctx); err != nil {
+		if err := d.OmaDiff(ctx); err != nil {
 			log.Fatalf("diff could not be displayed:\n%s", err)
 		}
 	case internal.Revert:
@@ -83,11 +83,11 @@ func (d *DispatchCommand) Dispatch(args []string, dbIns *gorm.DB) {
 		if err != nil {
 			log.Fatalf("%v\n", err)
 		}
-		if err := d.GitRevert(ctx, backFlag); err != nil {
+		if err := d.OmaRevert(ctx, backFlag); err != nil {
 			log.Fatalf("error while reverting:\n%v", err)
 		}
 	case internal.Log:
-		if err := d.GitLog(ctx); err != nil {
+		if err := d.OmaLog(ctx); err != nil {
 			log.Fatalf("error while logging the commit history: %v", err)
 		}
 		// if err := Gi
@@ -95,7 +95,7 @@ func (d *DispatchCommand) Dispatch(args []string, dbIns *gorm.DB) {
 
 }
 
-func (d *DispatchCommand) ParseOmaIgnore() []string {
+func (d *OmaVC) ParseOmaIgnore() []string {
 	omaIgnoreBytes, err := os.ReadFile("./.omaignore")
 	if err != nil {
 		panic(err)
@@ -108,7 +108,7 @@ func (d *DispatchCommand) ParseOmaIgnore() []string {
 	return separatedArgs
 }
 
-func (d *DispatchCommand) WalkDirsAndReadFiles() []internal.FileIngredient {
+func (d *OmaVC) WalkDirsAndReadFiles() []internal.FileIngredient {
 	currDir, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -122,7 +122,7 @@ func (d *DispatchCommand) WalkDirsAndReadFiles() []internal.FileIngredient {
 	return fileIngredients
 }
 
-func (d *DispatchCommand) GetAllVersionActionsForRepo(ctx context.Context, repositoryId int) ([]storage.VersionActions, error) {
+func (d *OmaVC) GetAllVersionActionsForRepo(ctx context.Context, repositoryId int) ([]storage.VersionActions, error) {
 	allVersions, err := d.versionsRepo.GetAllByRepoId(ctx, repositoryId)
 
 	if err != nil {
