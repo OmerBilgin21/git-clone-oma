@@ -18,22 +18,22 @@ type Versions struct {
 	Message      string         `gorm:"not null" json:"message"`
 }
 
-type VersionRepositoryImpl struct {
+type VersionRepository struct {
 	db *gorm.DB
 }
 
-func NewVersionRepository(db *gorm.DB) *VersionRepositoryImpl {
-	return &VersionRepositoryImpl{db: db}
+func NewVersionRepository(db *gorm.DB) *VersionRepository {
+	return &VersionRepository{db: db}
 }
 
-func (r *VersionRepositoryImpl) GetMaxVersionNumberForRepo(ctx context.Context, repoId int) (int, error) {
+func (r *VersionRepository) GetMaxVersionNumberForRepo(ctx context.Context, repoId int) (int, error) {
 	var maxId int
 	r.db.WithContext(ctx).Model(&Versions{}).Select("COALESCE(MAX(version_id), 0)").
 		Where("repository_id = ?", repoId).Scan(&maxId)
 	return maxId, nil
 }
 
-func (r *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Versions, error) {
+func (r *VersionRepository) Create(ctx context.Context, data *Versions) (*Versions, error) {
 	maxId, err := r.GetMaxVersionNumberForRepo(ctx, data.RepositoryId)
 	if err != nil {
 		return nil, fmt.Errorf("error getting max version number:\n%w", err)
@@ -45,13 +45,13 @@ func (r *VersionRepositoryImpl) Create(ctx context.Context, data *Versions) (*Ve
 	return data, result.Error
 }
 
-func (r *VersionRepositoryImpl) Get(ctx context.Context, id int) (*Versions, error) {
+func (r *VersionRepository) Get(ctx context.Context, id int) (*Versions, error) {
 	var v Versions
 	result := r.db.WithContext(ctx).First(&v, id)
 	return &v, result.Error
 }
 
-func (r *VersionRepositoryImpl) GetLatestXByRepoId(ctx context.Context, repoId, x int) ([]Versions, error) {
+func (r *VersionRepository) GetLatestXByRepoId(ctx context.Context, repoId, x int) ([]Versions, error) {
 	latestVersionId, err := r.GetMaxVersionNumberForRepo(ctx, repoId)
 	if err != nil {
 		return nil, fmt.Errorf("error finding latest version for repository %v:\n%w", repoId, err)
@@ -64,18 +64,18 @@ func (r *VersionRepositoryImpl) GetLatestXByRepoId(ctx context.Context, repoId, 
 	return versions, result.Error
 }
 
-func (r *VersionRepositoryImpl) GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
+func (r *VersionRepository) GetAllDistinctByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	var versions []Versions
 	result := r.db.WithContext(ctx).Where("repository_id = ?", repoId).Group("version_id").Find(&versions)
 	return versions, result.Error
 }
 
-func (r *VersionRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
+func (r *VersionRepository) GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	var versions []Versions
 	result := r.db.WithContext(ctx).Where("repository_id = ?", repoId).Find(&versions)
 	return versions, result.Error
 }
 
-func (r *VersionRepositoryImpl) Delete(ctx context.Context, id int) error {
+func (r *VersionRepository) Delete(ctx context.Context, id int) error {
 	return r.db.WithContext(ctx).Delete(&Versions{}, id).Error
 }

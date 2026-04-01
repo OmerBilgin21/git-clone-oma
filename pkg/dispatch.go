@@ -18,14 +18,14 @@ import (
 type DispatchCommand struct {
 	db                 *gorm.DB
 	omaRepo            *storage.OmaRepositoryImpl
-	versionsRepo       *storage.VersionRepositoryImpl
-	versionActionsRepo *storage.VersionActionsRepositoryImpl
+	versionsRepo       *storage.VersionRepository
+	versionActionsRepo *storage.VersionActionsRepository
 	fileIO             *storage.FileIOImpl
 	// slices are auto by reference in Go, no need for explicit ptr
 	fileIngredients []internal.FileIngredient
 }
 
-func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepositoryImpl, versionActionsRepo *storage.VersionActionsRepositoryImpl, fileIO *storage.FileIOImpl) *DispatchCommand {
+func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepository, versionActionsRepo *storage.VersionActionsRepository, fileIO *storage.FileIOImpl) *DispatchCommand {
 	return &DispatchCommand{
 		db:                 db,
 		omaRepo:            omaRepo,

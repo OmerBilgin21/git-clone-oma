@@ -25,25 +25,25 @@ type VersionActions struct {
 	Content   string         `gorm:"not null" json:"content"`
 }
 
-type VersionActionsRepositoryImpl struct {
+type VersionActionsRepository struct {
 	db *gorm.DB
 }
 
-func NewVersionActionsRepository(db *gorm.DB) *VersionActionsRepositoryImpl {
-	return &VersionActionsRepositoryImpl{db: db}
+func NewVersionActionsRepository(db *gorm.DB) *VersionActionsRepository {
+	return &VersionActionsRepository{db: db}
 }
 
-func (r *VersionActionsRepositoryImpl) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
+func (r *VersionActionsRepository) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
 	result := r.db.WithContext(ctx).Create(data)
 	return data, result.Error
 }
 
-func (r *VersionActionsRepositoryImpl) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
+func (r *VersionActionsRepository) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
 	var actions []VersionActions
 	result := r.db.WithContext(ctx).Where("version_id = ?", versionId).Find(&actions)
 	return actions, result.Error
 }
 
-func (r *VersionActionsRepositoryImpl) DeleteByVersionId(ctx context.Context, versionId int) error {
+func (r *VersionActionsRepository) DeleteByVersionId(ctx context.Context, versionId int) error {
 	return r.db.WithContext(ctx).Where("version_id = ?", versionId).Delete(&VersionActions{}).Error
 }

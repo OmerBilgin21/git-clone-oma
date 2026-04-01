@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func createActions(ctx context.Context, versionActionsRepo *storage.VersionActionsRepositoryImpl, actions []internal.Action, versionId int) error {
+func createActions(ctx context.Context, versionActionsRepo *storage.VersionActionsRepository, actions []internal.Action, versionId int) error {
 	for _, action := range actions {
 		actionToCreate := storage.VersionActions{
 			Pos:       action.Pos,
