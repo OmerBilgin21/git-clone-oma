@@ -1,13 +1,12 @@
-MIGRATE_CMD = go run cmd/db.go
 RUN_CMD = go run main.go
+ENTRY_POINT = ./main.go
 APP_NAME = oma
-VERSION  = v1.0.0
-BIN_DIR  = bin
+BIN_DIR  = ./bin
 
-.PHONY: .all .diff .commit .log .test .cmp
+.PHONY: cmp build zip clean init diff commit revert log reinitialize test
 
 reset:
-	${MIGRATE_CMD} reset
+	@go run cmd/db.go
 
 init:
 	${RUN_CMD} init
@@ -31,36 +30,46 @@ test:
 	go test -v -count=1 ./...
 
 cmp:
-	GOOS=linux GOARCH=amd64 go build -o $@ ./main.go
+	GOOS=linux GOARCH=amd64 go build -o $(APP_NAME) $(ENTRY_POINT)
 
-build: $(BIN_DIR)/$(APP_NAME)-linux \
-       $(BIN_DIR)/$(APP_NAME)-macos-arm64 \
-       $(BIN_DIR)/$(APP_NAME)-win.exe
+# name:GOOS:GOARCH
+PLATFORMS := \
+    linux-amd64:linux:amd64 \
+    linux-arm64:linux:arm64 \
+    macos-amd64:darwin:amd64 \
+    macos-arm64:darwin:arm64 \
+    win-amd64:windows:amd64 \
+    win-arm64:windows:arm64
+
+name   = $(word 1,$(subst :, ,$(1)))
+goos   = $(word 2,$(subst :, ,$(1)))
+goarch = $(word 3,$(subst :, ,$(1)))
+ext    = $(if $(filter windows,$(call goos,$(1))),.exe,)
+bin    = $(BIN_DIR)/$(APP_NAME)-$(call name,$(1))$(call ext,$(1))
+zipp   = $(BIN_DIR)/$(APP_NAME)-$(call name,$(1)).zip
+
+define build_rule
+$(call bin,$(1)): $(BIN_DIR)
+	GOOS=$(call goos,$(1)) GOARCH=$(call goarch,$(1)) go build -o $$@ $(ENTRY_POINT)
+endef
+
+define zip_rule
+$(call zipp,$(1)): $(call bin,$(1))
+	zip -j $$@ $$<
+endef
+
+$(foreach p,$(PLATFORMS),$(eval $(call build_rule,$(p))))
+$(foreach p,$(PLATFORMS),$(eval $(call zip_rule,$(p))))
+
+BINS := $(foreach p,$(PLATFORMS),$(call bin,$(p)))
+ZIPS := $(foreach p,$(PLATFORMS),$(call zipp,$(p)))
+
+build: clean $(BINS) zip
+
+zip: $(ZIPS)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
-
-$(BIN_DIR)/$(APP_NAME)-linux: $(BIN_DIR)
-	GOOS=linux GOARCH=amd64 go build -o $@ ./main.go
-
-$(BIN_DIR)/$(APP_NAME)-macos-arm64: $(BIN_DIR)
-	GOOS=darwin GOARCH=arm64 go build -o $@ ./main.go
-
-$(BIN_DIR)/$(APP_NAME)-win.exe: $(BIN_DIR)
-	GOOS=windows GOARCH=amd64 go build -o $@ ./main.go
-
-zip: $(BIN_DIR)/$(APP_NAME)-linux.zip \
-     $(BIN_DIR)/$(APP_NAME)-macos-arm64.zip \
-     $(BIN_DIR)/$(APP_NAME)-win.zip
-
-$(BIN_DIR)/$(APP_NAME)-linux.zip: $(BIN_DIR)/$(APP_NAME)-linux
-	zip -j $@ $<
-
-$(BIN_DIR)/$(APP_NAME)-macos-arm64.zip: $(BIN_DIR)/$(APP_NAME)-macos-arm64
-	zip -j $@ $<
-
-$(BIN_DIR)/$(APP_NAME)-win.zip: $(BIN_DIR)/$(APP_NAME)-win.exe
-	zip -j $@ $<
 
 clean:
 	rm -rf $(BIN_DIR)
