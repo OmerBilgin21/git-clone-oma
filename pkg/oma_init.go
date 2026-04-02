@@ -3,7 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"log"
+	"oma/internal"
 	"oma/internal/storage"
 	"strings"
 )
@@ -42,6 +42,6 @@ func (d *OmaVC) OmaInit(ctx context.Context) error {
 		return fmt.Errorf("error while creating repo init file:\n%v", err)
 	}
 
-	log.Print("repository initialized succesfully")
+	internal.Logger("repository initialized succesfully")
 	return nil
 }

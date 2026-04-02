@@ -18,7 +18,7 @@ type FileIngredient struct {
 // at the time I implemented this I didn't know
 // path/filepath.WalkDir existed :D
 // but hey, it works
-func WalkDirs(curr string, fileIngredientsPtr []FileIngredient, processedSteps []string, ignoreList []string, fileIO *storage.FileIOImpl) bool {
+func WalkDirs(curr string, fileIngredientsPtr *[]FileIngredient, processedSteps []string, ignoreList []string, fileIO *storage.FileIOImpl) bool {
 	dirIngredientList, err := os.ReadDir(curr)
 	if err != nil {
 		panic(err)
@@ -75,7 +75,7 @@ func WalkDirs(curr string, fileIngredientsPtr []FileIngredient, processedSteps [
 			panic(err)
 		}
 
-		fileIngredientsPtr = append(fileIngredientsPtr, FileIngredient{
+		*fileIngredientsPtr = append(*fileIngredientsPtr, FileIngredient{
 			FileName: fileNameToProcess,
 			Content:  content,
 		})

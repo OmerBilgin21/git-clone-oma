@@ -3,7 +3,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"log"
 	"oma/internal"
 	"oma/internal/storage"
 	"strings"
@@ -52,14 +51,14 @@ func (d *OmaVC) OmaCommit(ctx context.Context, messageFlag internal.Flag) error 
 	newCommitted := 0
 
 	for _, ingredient := range d.fileIngredients {
-		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, repoId)
+		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, *repoId)
 
 		if err != nil {
 			return fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.FileName, err)
 		}
 
 		if foundRepo.ID == 0 {
-			createCache(ctx, d.omaRepo, ingredient, repoId)
+			createCache(ctx, d.omaRepo, ingredient, *repoId)
 			newCommitted++
 			continue
 		}
@@ -100,10 +99,11 @@ func (d *OmaVC) OmaCommit(ctx context.Context, messageFlag internal.Flag) error 
 	}
 
 	if existingCommitted == 0 && newCommitted == 0 {
-		log.Printf("no change!")
+		internal.Logger("no changes")
 		return nil
 	}
 
-	log.Printf("diff committed successfully.\n%v known file(s) and %v new file(s)", existingCommitted, newCommitted)
+	internal.Logger(fmt.Sprintf("diff committed successfully.\n%v known file(s) and %v new file(s)", existingCommitted, newCommitted))
+
 	return nil
 }

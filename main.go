@@ -14,9 +14,13 @@ func main() {
 	omaRepo := storage.NewOmaRepository(db)
 	versionRepo := storage.NewVersionRepository(db)
 	versionActionsRepo := storage.NewVersionActionsRepository(db)
-	fileIO := storage.NewFileIO()
+	fileIO, err := storage.NewFileIO()
 
-	dispatch := pkg.NewDispatchCommand(
+	if err != nil {
+		internal.LogAndExit("error while getting fileIO", err)
+	}
+
+	omaVC := pkg.NewOmaVC(
 		db,
 		omaRepo,
 		versionRepo,
@@ -24,5 +28,5 @@ func main() {
 		fileIO,
 	)
 
-	dispatch.RunCMD(cliArgs, db)
+	omaVC.RunCMD(cliArgs, db)
 }

@@ -2,14 +2,11 @@ package pkg
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"oma/internal"
 	"oma/internal/storage"
-	"oma/util"
 	"os"
+	"slices"
 	"strings"
-	_ "strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -25,7 +22,7 @@ type OmaVC struct {
 	fileIngredients []internal.FileIngredient
 }
 
-func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepository, versionActionsRepo *storage.VersionActionsRepository, fileIO *storage.FileIOImpl) *OmaVC {
+func NewOmaVC(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, versionRepo *storage.VersionRepository, versionActionsRepo *storage.VersionActionsRepository, fileIO *storage.FileIOImpl) *OmaVC {
 	return &OmaVC{
 		db:                 db,
 		omaRepo:            omaRepo,
@@ -37,8 +34,9 @@ func NewDispatchCommand(db *gorm.DB, omaRepo *storage.OmaRepositoryImpl, version
 
 func (d *OmaVC) RunCMD(args []string, dbIns *gorm.DB) {
 	sqlDB, err := dbIns.DB()
+
 	if err != nil {
-		panic(err)
+		internal.LogAndExit("error while getting the DB instance", err)
 	}
 
 	defer sqlDB.Close()
@@ -56,41 +54,42 @@ func (d *OmaVC) RunCMD(args []string, dbIns *gorm.DB) {
 	err = parseArgs.GetCommand(&cmd)
 
 	if err != nil {
-		log.Fatalf("error while parsing the commands:\n%v", err)
+		internal.LogAndExit("error while parsing arguments", err)
 	}
 
 	switch cmd {
 	case internal.Init:
 		if err := d.OmaInit(ctx); err != nil {
-			log.Fatalf("error while initialising repository:\n%v", err)
+			internal.LogAndExit("error while initialising repository", err)
 		}
 
 	case internal.Commit:
 		messageFlag, err := parseArgs.GetFlag("message")
 		if err != nil {
-			log.Fatalf("%v\n", err)
+			internal.LogAndExit(err)
 		}
 		if err := d.OmaCommit(ctx, messageFlag); err != nil {
-			log.Fatalf("error while committing your changes:\n%v", err)
+			internal.LogAndExit("error while committing your changes", err)
 		}
 
 	case internal.Diff:
 		if err := d.OmaDiff(ctx); err != nil {
-			log.Fatalf("diff could not be displayed:\n%s", err)
+			internal.LogAndExit("diff could not be displayed", err)
 		}
+
 	case internal.Revert:
 		backFlag, err := parseArgs.GetFlag("back")
 		if err != nil {
-			log.Fatalf("%v\n", err)
+			internal.LogAndExit("error while parsing arguments for revert", err)
 		}
 		if err := d.OmaRevert(ctx, backFlag); err != nil {
-			log.Fatalf("error while reverting:\n%v", err)
+			internal.LogAndExit("error while reverting", err)
 		}
+
 	case internal.Log:
 		if err := d.OmaLog(ctx); err != nil {
-			log.Fatalf("error while logging the commit history: %v", err)
+			internal.LogAndExit("error while logging the commit history", err)
 		}
-		// if err := Gi
 	}
 
 }
@@ -100,12 +99,21 @@ func (d *OmaVC) ParseOmaIgnore() []string {
 	if err != nil {
 		panic(err)
 	}
+
 	omaIgnore := string(omaIgnoreBytes)
 
-	separatedArgs := util.PurifyReadResult(strings.Split(omaIgnore, "\n"))
-	separatedArgs = append(separatedArgs, internal.OMA_IGNORE_DEFAULTS...)
+	lines := strings.Split(omaIgnore, "\n")
+	if len(lines) > 0 {
+		for i, elem := range lines {
+			if elem == "" || elem == " " || elem == "\n" {
+				lines = slices.Delete(lines, i, i+1)
+			}
+		}
+	}
 
-	return separatedArgs
+	lines = append(lines, internal.OMA_IGNORE_DEFAULTS...)
+
+	return lines
 }
 
 func (d *OmaVC) WalkDirsAndReadFiles() []internal.FileIngredient {
@@ -117,7 +125,7 @@ func (d *OmaVC) WalkDirsAndReadFiles() []internal.FileIngredient {
 	ignoreList := d.ParseOmaIgnore()
 
 	var fileIngredients []internal.FileIngredient
-	internal.WalkDirs(currDir, fileIngredients, []string{}, ignoreList, d.fileIO)
+	internal.WalkDirs(currDir, &fileIngredients, []string{}, ignoreList, d.fileIO)
 
 	return fileIngredients
 }
@@ -126,14 +134,14 @@ func (d *OmaVC) GetAllVersionActionsForRepo(ctx context.Context, repositoryId in
 	allVersions, err := d.versionsRepo.GetAllByRepoId(ctx, repositoryId)
 
 	if err != nil {
-		return []storage.VersionActions{}, fmt.Errorf("error while trying to get versions for repository: %v\nerror:\n%w", repositoryId, err)
+		return []storage.VersionActions{}, err
 	}
 
 	var versionActions []storage.VersionActions
 	for _, version := range allVersions {
 		versionActionsOfVersion, err := d.versionActionsRepo.GetByVersionId(ctx, version.ID)
 		if err != nil {
-			return []storage.VersionActions{}, fmt.Errorf("error while trying to get version actions for version: %v\nerror:\n%w", version.ID, err)
+			return []storage.VersionActions{}, err
 		}
 		if len(versionActionsOfVersion) > 0 {
 			versionActions = append(versionActions, versionActionsOfVersion...)

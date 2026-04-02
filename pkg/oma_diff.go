@@ -14,7 +14,7 @@ func (d *OmaVC) OmaDiff(ctx context.Context) error {
 	}
 
 	for _, ingredient := range d.fileIngredients {
-		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, repoId)
+		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, *repoId)
 
 		if err != nil {
 			return err

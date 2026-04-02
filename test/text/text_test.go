@@ -87,7 +87,10 @@ func TestText(test *testing.T) {
 		},
 	}
 
-	fileIoRepo := storage.NewFileIO()
+	fileIoRepo, err := storage.NewFileIO()
+	if err != nil {
+		panic(err)
+	}
 
 	for _, tCase := range testCases {
 		test.Run(tCase.name, func(t *testing.T) {

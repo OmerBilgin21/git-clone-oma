@@ -19,8 +19,6 @@ type OmaRepository struct {
 	CachedText *string        `gorm:"default:null" json:"cachedText"`
 }
 
-func (OmaRepository) TableName() string { return "repositories" }
-
 type OmaRepositoryImpl struct {
 	db *gorm.DB
 }
@@ -94,8 +92,8 @@ func (r *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 	return r.db.WithContext(ctx).Delete(&OmaRepository{}, id).Error
 }
 
-func (r *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) ([]OmaRepository, error) {
-	var repos []OmaRepository
+func (r *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) (*[]OmaRepository, error) {
+	var repos *[]OmaRepository
 	result := r.db.WithContext(ctx).Where("oma_repo_id = ?", repoId).Find(&repos)
 	return repos, result.Error
 }

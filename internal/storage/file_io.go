@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"oma/util"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -22,15 +23,16 @@ type FileIOImpl struct {
 	env              Env
 }
 
-func NewFileIO() *FileIOImpl {
+func NewFileIO() (*FileIOImpl, error) {
 	currDirr, err := os.Getwd()
+
 	if err != nil {
-		panic("please give oma execution rights or check your directory permissions")
+		return nil, err
 	}
 
 	env := os.Getenv("ENV")
 	var ourEnv Env
-	if Env(env) == Dev {
+	if Env(env) != Prod {
 		fmt.Printf("RUNNING ON DEV\n")
 		ourEnv = Dev
 	} else {
@@ -42,7 +44,7 @@ func NewFileIO() *FileIOImpl {
 		infoFile:         "repository_info.txt",
 		infoDir:          ".oma",
 		env:              ourEnv,
-	}
+	}, nil
 }
 
 func (repoFileIO *FileIOImpl) ReadFile(filename string) (string, error) {
@@ -79,11 +81,11 @@ func (repoFileIO *FileIOImpl) CreateRepoInitInfo(repositoryId int) error {
 	return nil
 }
 
-func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
+func (repoFileIO *FileIOImpl) GetRepositoryId() (*int, error) {
 	content, err := repoFileIO.ReadFile(filepath.Join(repoFileIO.infoDir, repoFileIO.infoFile))
 
 	if err != nil {
-		return -1, fmt.Errorf("error while reading the info file:\n%v", err)
+		return nil, fmt.Errorf("error while reading the info file:\n%v", err)
 	}
 
 	for line := range strings.SplitSeq(content, "\n") {
@@ -92,14 +94,14 @@ func (repoFileIO *FileIOImpl) GetRepositoryId() (int, error) {
 			repoId, err := strconv.ParseInt(repoIdString, 10, 64)
 
 			if err != nil {
-				return -1, fmt.Errorf("error while parsing repository ID:\n%v", err)
+				return nil, fmt.Errorf("error while parsing repository ID:\n%v", err)
 			}
 
-			return int(repoId), nil
+			return util.Ptr(int(repoId)), nil
 		}
 	}
 
-	return -1, fmt.Errorf("repository ID could not be found")
+	return nil, fmt.Errorf("repository ID could not be found")
 }
 
 func (repoFileIO *FileIOImpl) WriteToFile(filename string, content string) error {
@@ -135,6 +137,7 @@ func (repoFileIO *FileIOImpl) DeleteFile(filename string) error {
 		fmt.Printf("file: %v would have been deleted\n", filename)
 		return nil
 	}
+
 	if _, err := os.Stat(filename); err == nil {
 		if err := os.RemoveAll(filename); err != nil {
 			return fmt.Errorf("error while removing the .oma directory:\n%w", err)
