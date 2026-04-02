@@ -3,11 +3,48 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"log"
 	"oma/internal"
+	"oma/internal/storage"
 	"strconv"
 	"strings"
 )
+
+func getDiffOfEverythingAgainstCurrentState(ctx context.Context, repoId *int, fileIngredients *[]internal.FileIngredient, omaRepo *storage.OmaRepositoryImpl, allVersionActionsOfRepo *[]storage.VersionActions) (int, int, error) {
+
+	existingCommitted := 0
+	newCommitted := 0
+
+	for _, ingredient := range *fileIngredients {
+		foundRepo, err := omaRepo.GetByFilename(ctx, ingredient.FileName, *repoId)
+
+		if err != nil {
+			return 0, 0, fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.FileName, err)
+		}
+
+		if foundRepo.ID == 0 {
+			newCommitted++
+			internal.Logger("ingredient.FileName: %+v\n", ingredient.FileName)
+			continue
+		}
+
+		var rebuilt string
+		internal.RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), *allVersionActionsOfRepo, &rebuilt)
+
+		if rebuilt == ingredient.Content {
+			continue
+		}
+
+		diffResult := internal.GetDiff(rebuilt, ingredient.Content, false)
+
+		if len(diffResult.Actions) == 0 {
+			continue
+		}
+
+		existingCommitted++
+	}
+
+	return existingCommitted, newCommitted, nil
+}
 
 func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 	repoId, err := d.fileIO.GetRepositoryId()
@@ -18,19 +55,40 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 
 	backAmount, err := strconv.Atoi(backFlag.Value)
 
+	internal.Logger("backAmount: %+v\n", backAmount)
+
 	if err != nil {
 		return fmt.Errorf("back flag's value must be an integer")
 	}
 
+	versionActions, err := d.GetAllVersionActionsForRepo(ctx, *repoId)
+	if err != nil {
+		return err
+	}
+
+	existing, newFiles, err := getDiffOfEverythingAgainstCurrentState(ctx, repoId, &d.fileIngredients, d.omaRepo, &versionActions)
+
+	if err != nil {
+		return fmt.Errorf("there was an error while diffing the current state of your repository to Oma's last state")
+	}
+
+	if existing > 0 || newFiles > 0 {
+		return fmt.Errorf("there are %v new and/or %v existing file with modification(s), please commit them first", newFiles, existing)
+	}
+
 	for _, file := range d.fileIngredients {
-		repository, err := d.omaRepo.GetByFilename(ctx, file.FileName, repoId)
+		repository, err := d.omaRepo.GetByFilename(ctx, file.FileName, *repoId)
 
 		if err != nil {
+			internal.Logger("err of GetByFilename: %+v\n", err)
 			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.FileName, err)
 		}
 
+		// did not exist before
 		if repository.ID == 0 {
+			internal.Logger("repository: %+v\n", repository)
 			// filename is an absolute path so this should work?
+			internal.Logger("file.FileName: %+v\n", file.FileName)
 			if err := d.fileIO.DeleteFile(file.FileName); err != nil {
 				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.FileName, backAmount)
 			}
@@ -82,6 +140,6 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 		}
 	}
 
-	log.Printf("%v commits reverted successfully", backAmount)
+	internal.Logger("commits reverted successfully", backAmount)
 	return nil
 }
