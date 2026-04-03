@@ -143,8 +143,8 @@ func (d *OmaVC) GetAllVersionActionsForRepo(ctx context.Context, repositoryId in
 		if err != nil {
 			return []storage.VersionActions{}, err
 		}
-		if len(versionActionsOfVersion) > 0 {
-			versionActions = append(versionActions, versionActionsOfVersion...)
+		if len(*versionActionsOfVersion) > 0 {
+			versionActions = append(versionActions, *versionActionsOfVersion...)
 		}
 	}
 

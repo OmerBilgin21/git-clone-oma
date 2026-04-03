@@ -4,18 +4,23 @@ import (
 	"context"
 	"fmt"
 	"oma/internal"
-	"oma/internal/storage"
 	"strconv"
 	"strings"
 )
 
-func getDiffOfEverythingAgainstCurrentState(ctx context.Context, repoId *int, fileIngredients *[]internal.FileIngredient, omaRepo *storage.OmaRepositoryImpl, allVersionActionsOfRepo *[]storage.VersionActions) (int, int, error) {
+func (d *OmaVC) getDiffOfEverythingAgainstCurrentState(ctx context.Context) (int, int, error) {
+
+	repoId, err := d.fileIO.GetRepositoryId()
+
+	if err != nil {
+		return 0, 0, err
+	}
 
 	existingCommitted := 0
 	newCommitted := 0
 
-	for _, ingredient := range *fileIngredients {
-		foundRepo, err := omaRepo.GetByFilename(ctx, ingredient.FileName, *repoId)
+	for _, ingredient := range d.fileIngredients {
+		foundRepo, err := d.omaRepo.GetByFilename(ctx, ingredient.FileName, *repoId)
 
 		if err != nil {
 			return 0, 0, fmt.Errorf("error while finding a repository for file: %v\nerror:\n%w\n", ingredient.FileName, err)
@@ -27,14 +32,20 @@ func getDiffOfEverythingAgainstCurrentState(ctx context.Context, repoId *int, fi
 			continue
 		}
 
+		versionActions, err := d.GetAllVersionActionsForRepo(ctx, foundRepo.ID)
+
 		var rebuilt string
-		internal.RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), *allVersionActionsOfRepo, &rebuilt)
+		internal.RebuildDiff(strings.Split(*foundRepo.CachedText, "\n"), versionActions, &rebuilt)
 
 		if rebuilt == ingredient.Content {
 			continue
 		}
 
+		internal.Logger("wasn't the same, continuing for", ingredient.FileName)
+
 		diffResult := internal.GetDiff(rebuilt, ingredient.Content, false)
+
+		internal.Logger("diffResult: ", diffResult)
 
 		if len(diffResult.Actions) == 0 {
 			continue
@@ -55,18 +66,13 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 
 	backAmount, err := strconv.Atoi(backFlag.Value)
 
-	internal.Logger("backAmount: %+v\n", backAmount)
+	internal.Logger("backAmount: ", backAmount)
 
 	if err != nil {
 		return fmt.Errorf("back flag's value must be an integer")
 	}
 
-	versionActions, err := d.GetAllVersionActionsForRepo(ctx, *repoId)
-	if err != nil {
-		return err
-	}
-
-	existing, newFiles, err := getDiffOfEverythingAgainstCurrentState(ctx, repoId, &d.fileIngredients, d.omaRepo, &versionActions)
+	existing, newFiles, err := d.getDiffOfEverythingAgainstCurrentState(ctx)
 
 	if err != nil {
 		return fmt.Errorf("there was an error while diffing the current state of your repository to Oma's last state")
@@ -100,6 +106,7 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 		}
 
 		maxVersion, _ := d.versionsRepo.GetMaxVersionNumberForRepo(ctx, repository.ID)
+		internal.Logger("maxVersion: ", maxVersion)
 
 		// means that this file did not have that many commits yet
 		if maxVersion < backAmount {

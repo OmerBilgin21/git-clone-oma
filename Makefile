@@ -30,7 +30,7 @@ test:
 	go test -v -count=1 ./...
 
 cmp:
-	GOOS=linux GOARCH=amd64 go build -o $(APP_NAME) $(ENTRY_POINT)
+	GOOS=linux GOARCH=amd64 go build -o /tmp/dev-compilation-test-$(APP_NAME) $(ENTRY_POINT)
 
 # name:GOOS:GOARCH
 PLATFORMS := \

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -38,35 +37,26 @@ func (r *OmaRepositoryImpl) Create(ctx context.Context, data *OmaRepository) (*O
 		return nil, fmt.Errorf("illogical attempt of creating a repository")
 	}
 
-	result := r.db.WithContext(ctx).Create(data)
-	return data, result.Error
+	err := r.db.WithContext(ctx).Create(data).Error
+	return data, err
 }
 
 func (r *OmaRepositoryImpl) Get(ctx context.Context, id int) (*OmaRepository, error) {
 	var repo OmaRepository
-	result := r.db.WithContext(ctx).First(&repo, id)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &repo, nil
+	err := r.db.WithContext(ctx).First(&repo, id).Error
+	return &repo, err
 }
 
 func (r *OmaRepositoryImpl) GetByFilename(ctx context.Context, filename string, omaRepoId int) (*OmaRepository, error) {
 	var repo OmaRepository
-	result := r.db.WithContext(ctx).Where("file_name = ? AND oma_repo_id = ?", filename, omaRepoId).First(&repo)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return &OmaRepository{}, nil
-		}
-		return nil, result.Error
-	}
-	return &repo, nil
+	err := r.db.WithContext(ctx).Where("file_name = ? AND oma_repo_id = ?", filename, omaRepoId).First(&repo).Error
+	return &repo, err
 }
 
 func (r *OmaRepositoryImpl) GetMany(ctx context.Context, ids []int) (*[]OmaRepository, error) {
 	var repos []OmaRepository
-	result := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&repos)
-	return &repos, result.Error
+	err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&repos).Error
+	return &repos, err
 }
 
 func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaRepository) (*OmaRepository, error) {
@@ -78,14 +68,14 @@ func (r *OmaRepositoryImpl) Update(ctx context.Context, id int, data *OmaReposit
 		updates["cached_text"] = *data.CachedText
 	}
 
-	result := r.db.WithContext(ctx).Model(&OmaRepository{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
-		return nil, result.Error
+	err := r.db.WithContext(ctx).Model(&OmaRepository{}).Where("id = ?", id).Updates(updates).Error
+	if err != nil {
+		return nil, err
 	}
 
 	var updated OmaRepository
-	result = r.db.WithContext(ctx).First(&updated, id)
-	return &updated, result.Error
+	err = r.db.WithContext(ctx).First(&updated, id).Error
+	return &updated, err
 }
 
 func (r *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
@@ -94,6 +84,6 @@ func (r *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 
 func (r *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) (*[]OmaRepository, error) {
 	var repos *[]OmaRepository
-	result := r.db.WithContext(ctx).Where("oma_repo_id = ?", repoId).Find(&repos)
-	return repos, result.Error
+	err := r.db.WithContext(ctx).Where("oma_repo_id = ?", repoId).Find(&repos).Error
+	return repos, err
 }

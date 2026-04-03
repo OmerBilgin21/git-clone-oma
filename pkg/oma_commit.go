@@ -17,7 +17,7 @@ func createActions(ctx context.Context, versionActionsRepo *storage.VersionActio
 			Content:   action.Content,
 		}
 
-		_, err := versionActionsRepo.Create(ctx, &actionToCreate)
+		err := versionActionsRepo.Create(ctx, &actionToCreate)
 
 		if err != nil {
 			return err

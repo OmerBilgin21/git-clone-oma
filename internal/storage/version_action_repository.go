@@ -33,15 +33,14 @@ func NewVersionActionsRepository(db *gorm.DB) *VersionActionsRepository {
 	return &VersionActionsRepository{db: db}
 }
 
-func (r *VersionActionsRepository) Create(ctx context.Context, data *VersionActions) (*VersionActions, error) {
-	result := r.db.WithContext(ctx).Create(data)
-	return data, result.Error
+func (r *VersionActionsRepository) Create(ctx context.Context, data *VersionActions) error {
+	return r.db.WithContext(ctx).Create(data).Error
 }
 
-func (r *VersionActionsRepository) GetByVersionId(ctx context.Context, versionId int) ([]VersionActions, error) {
+func (r *VersionActionsRepository) GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error) {
 	var actions []VersionActions
-	result := r.db.WithContext(ctx).Where("version_id = ?", versionId).Find(&actions)
-	return actions, result.Error
+	err := r.db.WithContext(ctx).Where("version_id = ?", versionId).Find(&actions).Error
+	return &actions, err
 }
 
 func (r *VersionActionsRepository) DeleteByVersionId(ctx context.Context, versionId int) error {
