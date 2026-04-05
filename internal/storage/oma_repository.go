@@ -82,6 +82,17 @@ func (r *OmaRepositoryImpl) Delete(ctx context.Context, id int) error {
 	return r.db.WithContext(ctx).Delete(&OmaRepository{}, id).Error
 }
 
+func (r *OmaRepositoryImpl) GetMaxVersionCountByOmaRepoId(ctx context.Context, omaRepoId int) (int, error) {
+	var max int
+	err := r.db.WithContext(ctx).
+		Model(&Versions{}).
+		Select("COALESCE(MAX(versions.version_id), 0)").
+		Joins("INNER JOIN oma_repositories ON oma_repositories.id = versions.repository_id").
+		Where("oma_repositories.oma_repo_id = ?", omaRepoId).
+		Scan(&max).Error
+	return max, err
+}
+
 func (r *OmaRepositoryImpl) GetAllByRepoId(ctx context.Context, repoId int) (*[]OmaRepository, error) {
 	var repos *[]OmaRepository
 	err := r.db.WithContext(ctx).Where("oma_repo_id = ?", repoId).Find(&repos).Error
