@@ -59,7 +59,7 @@ func (r *VersionRepository) GetLatestXByRepoId(ctx context.Context, repoId, x in
 
 	var versions []Versions
 	result := r.db.WithContext(ctx).
-		Where("repository_id = ? AND version_id <= ?", repoId, latestVersionId-x).
+		Where("repository_id = ? AND version_id > ?", repoId, latestVersionId-x).
 		Find(&versions)
 	return versions, result.Error
 }
