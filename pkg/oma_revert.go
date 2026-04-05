@@ -75,6 +75,15 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 		return fmt.Errorf("there are %v new and/or %v existing files with modifications, please commit them first", newFiles, existing)
 	}
 
+	maxAcrossAll, err := d.omaRepo.GetMaxVersionCountByOmaRepoId(ctx, *repoId)
+	if err != nil {
+		return fmt.Errorf("error while retrieving max version count:\n%w", err)
+	}
+
+	if backAmount > maxAcrossAll {
+		return fmt.Errorf("cannot revert %v commit(s), maximum amount of versions in this repository for a file is %v", backAmount, maxAcrossAll)
+	}
+
 	for _, file := range d.fileIngredients {
 		repository, err := d.omaRepo.GetByFilename(ctx, file.FileName, *repoId)
 
@@ -125,7 +134,7 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 			return err
 		}
 
-		oldVersion := strings.Split(file.Content, "\n")
+		oldVersion := strings.Split(*repository.CachedText, "\n")
 		var revertedFile string
 		internal.RebuildDiff(oldVersion, versionActions, &revertedFile)
 
