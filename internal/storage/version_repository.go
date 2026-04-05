@@ -72,7 +72,7 @@ func (r *VersionRepository) GetAllDistinctByRepoId(ctx context.Context, repoId i
 
 func (r *VersionRepository) GetAllByRepoId(ctx context.Context, repoId int) ([]Versions, error) {
 	var versions []Versions
-	result := r.db.WithContext(ctx).Where("repository_id = ?", repoId).Find(&versions)
+	result := r.db.WithContext(ctx).Where("repository_id = ?", repoId).Order("id asc").Find(&versions)
 	return versions, result.Error
 }
 
