@@ -68,11 +68,11 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 	existing, newFiles, err := d.getDiffOfEverythingAgainstCurrentState(ctx)
 
 	if err != nil {
-		return fmt.Errorf("there was an error while diffing the current state of your repository to Oma's last state")
+		return fmt.Errorf("there was an error while diffing the current state of your repository to Oma's last recorded state")
 	}
 
 	if existing > 0 || newFiles > 0 {
-		return fmt.Errorf("there are %v new and/or %v existing file with modification(s), please commit them first", newFiles, existing)
+		return fmt.Errorf("there are %v new and/or %v existing files with modifications, please commit them first", newFiles, existing)
 	}
 
 	for _, file := range d.fileIngredients {
