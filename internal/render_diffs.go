@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func renderSideBySideDiff(oldColoured, newColoured, filename string) {
 	oldLines, newLines := strings.Split(oldColoured, "\n"), strings.Split(newColoured, "\n")
 	maxLines := max(len(oldLines), len(newLines))
 
-	fa := []string{filename}
+	fa := []string{filepath.Base(filename)}
 	recursiveEqualizer(&fa)
 	headerName := fa[0]
 
