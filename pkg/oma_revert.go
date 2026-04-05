@@ -28,7 +28,6 @@ func (d *OmaVC) getDiffOfEverythingAgainstCurrentState(ctx context.Context) (int
 
 		if foundRepo.ID == 0 {
 			newCommitted++
-			internal.Logger("ingredient.FileName: %+v\n", ingredient.FileName)
 			continue
 		}
 
@@ -41,11 +40,7 @@ func (d *OmaVC) getDiffOfEverythingAgainstCurrentState(ctx context.Context) (int
 			continue
 		}
 
-		internal.Logger("wasn't the same, continuing for", ingredient.FileName)
-
 		diffResult := internal.GetDiff(rebuilt, ingredient.Content, false)
-
-		internal.Logger("diffResult: ", diffResult)
 
 		if len(diffResult.Actions) == 0 {
 			continue
@@ -66,8 +61,6 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 
 	backAmount, err := strconv.Atoi(backFlag.Value)
 
-	internal.Logger("backAmount: ", backAmount)
-
 	if err != nil {
 		return fmt.Errorf("back flag's value must be an integer")
 	}
@@ -86,15 +79,12 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 		repository, err := d.omaRepo.GetByFilename(ctx, file.FileName, *repoId)
 
 		if err != nil {
-			internal.Logger("err of GetByFilename: %+v\n", err)
 			return fmt.Errorf("error while getting repository: %v\nerror:\n%w", file.FileName, err)
 		}
 
 		// did not exist before
 		if repository.ID == 0 {
-			internal.Logger("repository: %+v\n", repository)
 			// filename is an absolute path so this should work?
-			internal.Logger("file.FileName: %+v\n", file.FileName)
 			if err := d.fileIO.DeleteFile(file.FileName); err != nil {
 				return fmt.Errorf("file %v did not exist %v commits ago, however, the attempt of deleting it was not successful", file.FileName, backAmount)
 			}
@@ -106,7 +96,6 @@ func (d *OmaVC) OmaRevert(ctx context.Context, backFlag internal.Flag) error {
 		}
 
 		maxVersion, _ := d.versionsRepo.GetMaxVersionNumberForRepo(ctx, repository.ID)
-		internal.Logger("maxVersion: ", maxVersion)
 
 		// means that this file did not have that many commits yet
 		if maxVersion < backAmount {
