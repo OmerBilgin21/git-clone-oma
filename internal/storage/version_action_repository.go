@@ -39,7 +39,7 @@ func (r *VersionActionsRepository) Create(ctx context.Context, data *VersionActi
 
 func (r *VersionActionsRepository) GetByVersionId(ctx context.Context, versionId int) (*[]VersionActions, error) {
 	var actions []VersionActions
-	err := r.db.WithContext(ctx).Where("version_id = ?", versionId).Find(&actions).Error
+	err := r.db.WithContext(ctx).Where("version_id = ?", versionId).Order("id asc").Find(&actions).Error
 	return &actions, err
 }
 
